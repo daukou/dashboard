@@ -3,18 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daukou Dashboard</title>
+    <title>Dauko Dashboard</title>
     
     <!-- Moderný font Montserrat -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
 
     <style>
-        /* CSS premenné pre jednoduché nastavenie */
-        :root {
-            /* TU SI NASTAV PRIEHĽADNOSŤ LOGA (0.1 je veľmi slabé, 1.0 je úplne viditeľné) */
-            --bg-opacity: 0.2; 
-        }
-
         * {
             margin: 0;
             padding: 0;
@@ -22,20 +16,20 @@
         }
 
         body {
-            background-color: #070707; /* Ešte tmavšia čierna pre lepší kontrast */
+            background-color: #000000;
             color: #ffffff;
             font-family: 'Montserrat', sans-serif;
             height: 100vh;
+            width: 100vw;
             overflow: hidden;
             position: relative;
-            /* Zabezpečí, že text sa nedá označiť prstom/myšou */
+            /* Zamedzenie označovania textu pri dotyku */
             user-select: none; 
             -webkit-user-select: none;
         }
 
         /* 
-           Vytvoríme virtuálnu vrstvu pre pozadie. 
-           Takto môžeme zmeniť priehľadnosť IBA logu a texty ostanú na 100% biele. 
+           Pozadie s logom – naplní celú obrazovku, 100% nepriehľadnosť
         */
         body::before {
             content: "";
@@ -44,17 +38,12 @@
             left: 0;
             width: 100%;
             height: 100%;
-            /* Načítanie tvojho loga */
-            background-image: url('PCpozadie.png');
+            background-image: url('daukoProfilovka.png');
             background-position: center;
             background-repeat: no-repeat;
-            /* contain zabezpečí, že celé logo bude viditeľné. Ak chceš, aby vyplnilo celý displej, zmeň to na 'cover' */
-            background-size: contain; 
-            opacity: var(--bg-opacity);
-            z-index: -1; /* Posunie obrázok úplne dozadu */
-            
-            /* Pridáme jemný biely "glow" efekt okolo loga priamo na pozadí, ak je logo s priehľadným pozadím */
-            filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.3));
+            background-size: cover; /* Vyplní celú plochu obrazovky */
+            opacity: 1.0; /* Plná viditeľnosť / nepriehľadné */
+            z-index: -1;
         }
 
         /* Ľavý horný roh - Čas */
@@ -62,31 +51,38 @@
             position: absolute;
             top: 50px;
             left: 60px;
-            font-size: 6rem; /* Veľkosť času */
+            font-size: 6rem;
             font-weight: 700;
-            text-shadow: 2px 2px 15px rgba(0, 0, 0, 0.8); /* Tieň pre lepšiu čitateľnosť nad logom */
+            line-height: 1;
+            text-shadow: 0px 4px 20px rgba(0, 0, 0, 0.9); /* Tieň pre skvelú čitateľnosť */
         }
 
-        /* Pravý horný roh - Dátum */
+        /* Pravý horný roh - Dátum vycentrovaný pod dňom */
         .top-right {
             position: absolute;
             top: 50px;
             right: 60px;
-            text-align: right;
-            text-shadow: 2px 2px 15px rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* Vycentrovanie dňa a dátumu na stred */
+            text-align: center;
+            text-shadow: 0px 4px 20px rgba(0, 0, 0, 0.9);
         }
 
         #day {
-            font-size: 3rem;
+            font-size: 2.8rem;
             font-weight: 700;
             letter-spacing: 12px;
-            margin-bottom: 5px;
+            /* Kompenzácia poslednej medzery v letter-spacing pre perfektné vycentrovanie */
+            margin-right: -12px; 
+            margin-bottom: 6px;
         }
 
         #date {
             font-size: 1.2rem;
             font-weight: 700;
-            letter-spacing: 2px;
+            letter-spacing: 3px;
+            margin-right: -3px;
         }
     </style>
 </head>
@@ -97,7 +93,7 @@
         <div id="clock">00:00</div>
     </div>
 
-    <!-- Dátum vpravo hore -->
+    <!-- Dátum vpravo hore (Vycentrovaný) -->
     <div class="top-right">
         <div id="day">DEŇ</div>
         <div id="date">00 MESIAC 0000</div>
@@ -107,29 +103,27 @@
         function updateDashboard() {
             const now = new Date();
             
-            // Čas (HH:MM)
+            // Hodiny a minúty (HH:MM)
             let hours = String(now.getHours()).padStart(2, '0');
             let minutes = String(now.getMinutes()).padStart(2, '0');
             document.getElementById('clock').textContent = `${hours}:${minutes}`;
             
-            // Slovenské názvy dní
+            // Slovenské dni a mesiace
             const days = ['NEDEĽA', 'PONDELOK', 'UTOROK', 'STREDA', 'ŠTVRTOK', 'PIATOK', 'SOBOTA'];
-            
-            // Slovenské názvy mesiacov
             const months = ['JANUÁR', 'FEBRUÁR', 'MAREC', 'APRÍL', 'MÁJ', 'JÚN', 'JÚL', 'AUGUST', 'SEPTEMBER', 'OKTÓBER', 'NOVEMBER', 'DECEMBER'];
             
-            // Zobrazenie dňa v týždni
+            // Nastavenie dňa v týždni
             document.getElementById('day').textContent = days[now.getDay()];
             
-            // Zobrazenie dátumu (DD MESIAC RRRR)
-            let dayNum = String(now.getDate()).padStart(2, '0'); // pridá nulu, ak je jednociferné
+            // Nastavenie dátumu (DD MESIAC RRRR)
+            let dayNum = String(now.getDate()).padStart(2, '0');
             let month = months[now.getMonth()];
             let year = now.getFullYear();
             
             document.getElementById('date').textContent = `${dayNum} ${month} ${year}`;
         }
 
-        // Spustenie pri načítaní a následne každú sekundu
+        // Spustenie pri načítaní a aktualizácia každú sekundu
         updateDashboard();
         setInterval(updateDashboard, 1000);
     </script>
