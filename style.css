@@ -1,4 +1,3 @@
-/* Reset základných okrajov */
 * {
     margin: 0;
     padding: 0;
@@ -6,31 +5,53 @@
 }
 
 body {
-    background-color: #000000;
+    background-color: #111111; /* Veľmi tmavá sivá/čierna */
     color: #ffffff;
-    font-family: 'Press Start 2P', cursive; /* Retro pixelový font */
+    font-family: 'Montserrat', sans-serif;
+    height: 100vh;
+    overflow: hidden;
+    position: relative; /* Potrebné pre rohovú pozíciu */
+}
+
+/* Ľavý horný roh - Čas */
+.top-left {
+    position: absolute;
+    top: 50px;
+    left: 60px;
+    font-size: 6rem;
+    font-weight: 700;
+}
+
+/* Pravý horný roh - Dátum */
+.top-right {
+    position: absolute;
+    top: 50px;
+    right: 60px;
+    text-align: right;
+}
+
+#day {
+    font-size: 3rem;
+    font-weight: 700;
+    letter-spacing: 12px; /* Široké medzery podľa obrázka */
+    margin-bottom: 5px;
+}
+
+#date {
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+}
+
+/* Stred - Logo */
+.center-content {
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh; /* Roztiahne na celú výšku displeja */
-    overflow: hidden; /* Skryje posuvníky */
-}
-
-.container {
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 50px; /* Medzera medzi logom a hodinami */
+    height: 100vh;
 }
 
 .logo {
-    width: 250px; /* Šírka loga, môžeš si upraviť */
-    image-rendering: pixelated; /* Zachová ostré hrany, ak je logo pixel art */
-}
-
-.clock {
-    font-size: 5rem; /* Obrovský text pre hodiny */
-    text-shadow: 4px 4px 0px #333333; /* Jemný retro tieň */
-    letter-spacing: 5px;
+    width: 60%; /* Zväčšené podľa návrhu */
+    max-width: 700px;
 }
