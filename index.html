@@ -3,28 +3,135 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daukou Dashboard</title>
-    <link rel="stylesheet" href="style.css">
-    <!-- Moderný font podobný tvojmu návrhu -->
+    <title>Dauko Dashboard</title>
+    
+    <!-- Moderný font Montserrat -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* CSS premenné pre jednoduché nastavenie */
+        :root {
+            /* TU SI NASTAV PRIEHĽADNOSŤ LOGA (0.1 je veľmi slabé, 1.0 je úplne viditeľné) */
+            --bg-opacity: 0.2; 
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #070707; /* Ešte tmavšia čierna pre lepší kontrast */
+            color: #ffffff;
+            font-family: 'Montserrat', sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+            /* Zabezpečí, že text sa nedá označiť prstom/myšou */
+            user-select: none; 
+            -webkit-user-select: none;
+        }
+
+        /* 
+           Vytvoríme virtuálnu vrstvu pre pozadie. 
+           Takto môžeme zmeniť priehľadnosť IBA logu a texty ostanú na 100% biele. 
+        */
+        body::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            /* Načítanie tvojho loga */
+            background-image: url('daukoProfilovka.png');
+            background-position: center;
+            background-repeat: no-repeat;
+            /* contain zabezpečí, že celé logo bude viditeľné. Ak chceš, aby vyplnilo celý displej, zmeň to na 'cover' */
+            background-size: contain; 
+            opacity: var(--bg-opacity);
+            z-index: -1; /* Posunie obrázok úplne dozadu */
+            
+            /* Pridáme jemný biely "glow" efekt okolo loga priamo na pozadí, ak je logo s priehľadným pozadím */
+            filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.3));
+        }
+
+        /* Ľavý horný roh - Čas */
+        .top-left {
+            position: absolute;
+            top: 50px;
+            left: 60px;
+            font-size: 6rem; /* Veľkosť času */
+            font-weight: 700;
+            text-shadow: 2px 2px 15px rgba(0, 0, 0, 0.8); /* Tieň pre lepšiu čitateľnosť nad logom */
+        }
+
+        /* Pravý horný roh - Dátum */
+        .top-right {
+            position: absolute;
+            top: 50px;
+            right: 60px;
+            text-align: right;
+            text-shadow: 2px 2px 15px rgba(0, 0, 0, 0.8);
+        }
+
+        #day {
+            font-size: 3rem;
+            font-weight: 700;
+            letter-spacing: 12px;
+            margin-bottom: 5px;
+        }
+
+        #date {
+            font-size: 1.2rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+    </style>
 </head>
 <body>
+
     <!-- Čas vľavo hore -->
     <div class="top-left">
         <div id="clock">00:00</div>
     </div>
-    
-    <!-- Logo v strede -->
-    <div class="center-content">
-        <img src="daukoProfilovka.png" alt="Dauko Logo" class="logo">
-    </div>
 
     <!-- Dátum vpravo hore -->
     <div class="top-right">
-        <div id="day">DAY</div>
-        <div id="date">00 MON 0000</div>
+        <div id="day">DEŇ</div>
+        <div id="date">00 MESIAC 0000</div>
     </div>
 
-    <script src="script.js"></script>
+    <script>
+        function updateDashboard() {
+            const now = new Date();
+            
+            // Čas (HH:MM)
+            let hours = String(now.getHours()).padStart(2, '0');
+            let minutes = String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('clock').textContent = `${hours}:${minutes}`;
+            
+            // Slovenské názvy dní
+            const days = ['NEDEĽA', 'PONDELOK', 'UTOROK', 'STREDA', 'ŠTVRTOK', 'PIATOK', 'SOBOTA'];
+            
+            // Slovenské názvy mesiacov
+            const months = ['JANUÁR', 'FEBRUÁR', 'MAREC', 'APRÍL', 'MÁJ', 'JÚN', 'JÚL', 'AUGUST', 'SEPTEMBER', 'OKTÓBER', 'NOVEMBER', 'DECEMBER'];
+            
+            // Zobrazenie dňa v týždni
+            document.getElementById('day').textContent = days[now.getDay()];
+            
+            // Zobrazenie dátumu (DD MESIAC RRRR)
+            let dayNum = String(now.getDate()).padStart(2, '0'); // pridá nulu, ak je jednociferné
+            let month = months[now.getMonth()];
+            let year = now.getFullYear();
+            
+            document.getElementById('date').textContent = `${dayNum} ${month} ${year}`;
+        }
+
+        // Spustenie pri načítaní a následne každú sekundu
+        updateDashboard();
+        setInterval(updateDashboard, 1000);
+    </script>
 </body>
 </html>
