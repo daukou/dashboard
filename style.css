@@ -1,0 +1,36 @@
+/* Reset základných okrajov */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: #000000;
+    color: #ffffff;
+    font-family: 'Press Start 2P', cursive; /* Retro pixelový font */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh; /* Roztiahne na celú výšku displeja */
+    overflow: hidden; /* Skryje posuvníky */
+}
+
+.container {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 50px; /* Medzera medzi logom a hodinami */
+}
+
+.logo {
+    width: 250px; /* Šírka loga, môžeš si upraviť */
+    image-rendering: pixelated; /* Zachová ostré hrany, ak je logo pixel art */
+}
+
+.clock {
+    font-size: 5rem; /* Obrovský text pre hodiny */
+    text-shadow: 4px 4px 0px #333333; /* Jemný retro tieň */
+    letter-spacing: 5px;
+}
