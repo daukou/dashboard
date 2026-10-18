@@ -4,10 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dauko Dashboard</title>
-    
-    <!-- Moderný font Montserrat -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
-
     <style>
         * {
             margin: 0;
@@ -16,34 +13,18 @@
         }
 
         body {
+            /* Tvoje logo ako pozadie na celú obrazovku */
+            background-image: url('daukoProfilovka.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
             background-color: #000000;
+            
             color: #ffffff;
             font-family: 'Montserrat', sans-serif;
             height: 100vh;
-            width: 100vw;
             overflow: hidden;
             position: relative;
-            /* Zamedzenie označovania textu pri dotyku */
-            user-select: none; 
-            -webkit-user-select: none;
-        }
-
-        /* 
-           Pozadie s logom – naplní celú obrazovku, 100% nepriehľadnosť
-        */
-        body::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image: url('PCpozadie.png');
-            background-position: center;
-            background-repeat: no-repeat;
-            background-size: cover; /* Vyplní celú plochu obrazovky */
-            opacity: 1.0; /* Plná viditeľnosť / nepriehľadné */
-            z-index: -1;
         }
 
         /* Ľavý horný roh - Čas */
@@ -53,77 +34,118 @@
             left: 60px;
             font-size: 6rem;
             font-weight: 700;
-            line-height: 1;
-            text-shadow: 0px 4px 20px rgba(0, 0, 0, 0.9); /* Tieň pre skvelú čitateľnosť */
         }
 
-        /* Pravý horný roh - Dátum vycentrovaný pod dňom */
+        /* Pravý horný roh - Dátum a Rozvrh */
         .top-right {
             position: absolute;
             top: 50px;
             right: 60px;
             display: flex;
             flex-direction: column;
-            align-items: center; /* Vycentrovanie dňa a dátumu na stred */
-            text-align: center;
-            text-shadow: 0px 4px 20px rgba(0, 0, 0, 0.9);
+            align-items: flex-end; /* Zarovnanie celého bloku doprava */
         }
 
         #day {
-            font-size: 2.8rem;
+            font-size: 3rem;
             font-weight: 700;
             letter-spacing: 12px;
-            /* Kompenzácia poslednej medzery v letter-spacing pre perfektné vycentrovanie */
-            margin-right: -12px; 
-            margin-bottom: 6px;
+            margin-right: -12px;
+            margin-bottom: 5px;
         }
 
         #date {
             font-size: 1.2rem;
             font-weight: 700;
-            letter-spacing: 3px;
-            margin-right: -3px;
+            letter-spacing: 2px;
+            margin-bottom: 20px; /* Medzera medzi dátumom a rozvrhom */
+        }
+
+        /* Kontajner pre rozvrh */
+        #schedule {
+            display: flex;
+            gap: 8px; /* Medzery medzi predmetmi */
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            max-width: 400px;
+        }
+
+        /* Dizajn jednotlivého predmetu */
+        .subject {
+            border: 2px solid #ffffff;
+            border-radius: 6px;
+            padding: 5px 12px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            background-color: rgba(0, 0, 0, 0.5); /* Jemne tmavé pozadie pre lepšiu čitateľnosť */
+            backdrop-filter: blur(4px);
         }
     </style>
 </head>
 <body>
 
-    <!-- Čas vľavo hore -->
     <div class="top-left">
         <div id="clock">00:00</div>
     </div>
 
-    <!-- Dátum vpravo hore (Vycentrovaný) -->
     <div class="top-right">
         <div id="day">DEŇ</div>
-        <div id="date">00 MESIAC 0000</div>
+        <div id="date">00 MES 0000</div>
+        <!-- Tu sa automaticky vygeneruje rozvrh -->
+        <div id="schedule"></div>
     </div>
 
     <script>
+        // Tvoj reálny rozvrh vyextrahovaný z obrázka
+        const weeklySchedule = {
+            1: ['SJL', 'MAT', 'INP', 'ANJ', 'LIN', 'PBE'], // Pondelok
+            2: ['OBP', 'ANJ', 'SJL', 'MAT', 'NEJ'],        // Utorok
+            3: ['TSV', 'INP', 'TEM', 'OBP', 'TH'],         // Streda
+            4: ['DDW', 'SJL', 'OBN', 'ANJ'],               // Štvrtok
+            5: ['ODP', 'NEJ', 'LIN'],                      // Piatok
+            6: ['VOĽNO'],                                  // Sobota
+            0: ['VOĽNO']                                   // Nedeľa
+        };
+
+        // Uchovanie aktuálneho dňa, aby sme rozvrh neprekresľovali zbytočne každú sekundu
+        let currentDayIndex = -1;
+
         function updateDashboard() {
             const now = new Date();
             
-            // Hodiny a minúty (HH:MM)
-            let hours = String(now.getHours()).padStart(2, '0');
-            let minutes = String(now.getMinutes()).padStart(2, '0');
+            // 1. Aktualizácia ČASU
+            let hours = now.getHours().toString().padStart(2, '0');
+            let minutes = now.getMinutes().toString().padStart(2, '0');
             document.getElementById('clock').textContent = `${hours}:${minutes}`;
             
-            // Slovenské dni a mesiace
-            const days = ['NEDEĽA', 'PONDELOK', 'UTOROK', 'STREDA', 'ŠTVRTOK', 'PIATOK', 'SOBOTA'];
-            const months = ['JANUÁR', 'FEBRUÁR', 'MAREC', 'APRÍL', 'MÁJ', 'JÚN', 'JÚL', 'AUGUST', 'SEPTEMBER', 'OKTÓBER', 'NOVEMBER', 'DECEMBER'];
-            
-            // Nastavenie dňa v týždni
-            document.getElementById('day').textContent = days[now.getDay()];
-            
-            // Nastavenie dátumu (DD MESIAC RRRR)
-            let dayNum = String(now.getDate()).padStart(2, '0');
-            let month = months[now.getMonth()];
-            let year = now.getFullYear();
-            
-            document.getElementById('date').textContent = `${dayNum} ${month} ${year}`;
+            // 2. Aktualizácia DÁTUMU (iba ak sa zmenil deň)
+            if (now.getDay() !== currentDayIndex) {
+                currentDayIndex = now.getDay();
+                
+                const days = ['N E D E Ľ A', 'P O N D E L O K', 'U T O R O K', 'S T R E D A', 'Š T V R T O K', 'P I A T O K', 'S O B O T A'];
+                const months = ['JANUÁR', 'FEBRUÁR', 'MAREC', 'APRÍL', 'MÁJ', 'JÚN', 'JÚL', 'AUGUST', 'SEPTEMBER', 'OKTÓBER', 'NOVEMBER', 'DECEMBER'];
+                
+                // Vykreslenie dňa a dátumu
+                document.getElementById('day').textContent = days[currentDayIndex];
+                document.getElementById('date').textContent = `${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+
+                // 3. Vykreslenie ROZVRHU
+                const scheduleContainer = document.getElementById('schedule');
+                scheduleContainer.innerHTML = ''; // Vymaže starý rozvrh
+
+                const todaysSubjects = weeklySchedule[currentDayIndex];
+                
+                todaysSubjects.forEach(subject => {
+                    const span = document.createElement('span');
+                    span.className = 'subject';
+                    span.textContent = subject;
+                    scheduleContainer.appendChild(span);
+                });
+            }
         }
 
-        // Spustenie pri načítaní a aktualizácia každú sekundu
+        // Spustenie
         updateDashboard();
         setInterval(updateDashboard, 1000);
     </script>
