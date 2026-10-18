@@ -1,20 +1,24 @@
-function updateClock() {
+function updateDashboard() {
     const now = new Date();
     
-    // Získanie hodín, minút a sekúnd a pridanie nuly na začiatok, ak sú menšie ako 10
+    // Čas (HH:MM)
     let hours = now.getHours().toString().padStart(2, '0');
     let minutes = now.getMinutes().toString().padStart(2, '0');
-    let seconds = now.getSeconds().toString().padStart(2, '0');
+    document.getElementById('clock').textContent = `${hours}:${minutes}`;
     
-    // Spojenie do formátu HH:MM:SS
-    const timeString = `${hours}:${minutes}:${seconds}`;
+    // Zoznamy pre anglické názvy dní a mesiacov
+    const days = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+    const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
     
-    // Zapísanie času do HTML
-    document.getElementById('clock').textContent = timeString;
+    // Dátum
+    document.getElementById('day').textContent = days[now.getDay()];
+    
+    let dayNum = now.getDate();
+    let month = months[now.getMonth()];
+    let year = now.getFullYear();
+    
+    document.getElementById('date').textContent = `${dayNum} ${month} ${year}`;
 }
 
-// Spustíme funkciu hneď po načítaní stránky
-updateClock();
-
-// Nastavíme opakované spúšťanie funkcie každých 1000 milisekúnd (1 sekunda)
-setInterval(updateClock, 1000);
+updateDashboard();
+setInterval(updateDashboard, 1000);
