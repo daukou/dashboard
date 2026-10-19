@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dauko Dashboard</title>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -13,13 +13,11 @@
         }
 
         body {
-            /* Tvoje logo ako pozadie na celú obrazovku */
-            background-image: url('PCpozadie.png');
+            background-image: url('daukoProfilovka.png');
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
             background-color: #000000;
-            
             color: #ffffff;
             font-family: 'Montserrat', sans-serif;
             height: 100vh;
@@ -43,7 +41,7 @@
             right: 60px;
             display: flex;
             flex-direction: column;
-            align-items: flex-end; /* Zarovnanie celého bloku doprava */
+            align-items: flex-end;
         }
 
         #day {
@@ -58,28 +56,65 @@
             font-size: 1.2rem;
             font-weight: 700;
             letter-spacing: 2px;
-            margin-bottom: 20px; /* Medzera medzi dátumom a rozvrhom */
+            margin-bottom: 30px;
         }
 
-        /* Kontajner pre rozvrh */
+        /* Nadpis rozvrhu (Dnešný / Zajtrajší) */
+        #schedule-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 3px;
+            opacity: 0.6;
+            margin-bottom: 10px;
+        }
+
+        /* Kontajner pre rozvrh - dlaždice */
         #schedule {
             display: flex;
-            gap: 8px; /* Medzery medzi predmetmi */
+            gap: 12px;
             flex-wrap: wrap;
             justify-content: flex-end;
-            max-width: 400px;
+            max-width: 550px;
         }
 
-        /* Dizajn jednotlivého predmetu */
-        .subject {
-            border: 2px solid #ffffff;
-            border-radius: 6px;
-            padding: 5px 12px;
-            font-size: 0.9rem;
+        /* Dizajn jednej dlaždice */
+        .tile {
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            border-radius: 12px;
+            padding: 12px 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            min-width: 90px;
+            transition: all 0.3s ease;
+        }
+
+        .tile-subject {
+            font-size: 1.4rem;
             font-weight: 700;
             letter-spacing: 1px;
-            background-color: rgba(0, 0, 0, 0.5); /* Jemne tmavé pozadie pre lepšiu čitateľnosť */
-            backdrop-filter: blur(4px);
+            margin-bottom: 4px;
+        }
+
+        .tile-time {
+            font-size: 0.75rem;
+            font-weight: 600;
+            opacity: 0.7;
+        }
+
+        /* Zvýraznenie práve prebiehajúcej hodiny */
+        .tile.active {
+            background-color: #ffffff;
+            color: #000000;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+
+        .tile.active .tile-time {
+            opacity: 1;
         }
     </style>
 </head>
@@ -92,55 +127,138 @@
     <div class="top-right">
         <div id="day">DEŇ</div>
         <div id="date">00 MES 0000</div>
-        <!-- Tu sa automaticky vygeneruje rozvrh -->
+        
+        <div id="schedule-label">DNEŠNÝ ROZVRH</div>
         <div id="schedule"></div>
     </div>
 
     <script>
-        // Tvoj reálny rozvrh vyextrahovaný z obrázka
-        const weeklySchedule = {
-            1: ['SJL', 'MAT', 'INP', 'ANJ', 'LIN', 'PBE'], // Pondelok
-            2: ['OBP', 'ANJ', 'SJL', 'MAT', 'NEJ'],        // Utorok
-            3: ['TSV', 'INP', 'TEM', 'OBP', 'TH'],         // Streda
-            4: ['DDW', 'SJL', 'OBN', 'ANJ'],               // Štvrtok
-            5: ['ODP', 'NEJ', 'LIN'],                      // Piatok
-            6: ['VOĽNO'],                                  // Sobota
-            0: ['VOĽNO']                                   // Nedeľa
+        // Kompletný rozvrh s presnými časmi podľa obrázka
+        const scheduleData = {
+            1: [ // Pondelok
+                { s: 'SJL', start: '08:00', end: '08:45' },
+                { s: 'MAT', start: '08:50', end: '09:35' },
+                { s: 'INP', start: '09:45', end: '10:30' },
+                { s: 'ANJ', start: '10:50', end: '11:35' },
+                { s: 'LIN', start: '11:40', end: '12:25' },
+                { s: 'PBE', start: '12:35', end: '14:15' } // 6. a 7. hodina spojená
+            ],
+            2: [ // Utorok
+                { s: 'OBP', start: '08:00', end: '09:35' }, // 1. a 2. hodina spojená
+                { s: 'ANJ', start: '09:45', end: '10:30' },
+                { s: 'SJL', start: '10:50', end: '11:35' },
+                { s: 'MAT', start: '11:40', end: '12:25' },
+                { s: 'NEJ', start: '12:35', end: '14:15' } // 6. a 7. hodina spojená
+            ],
+            3: [ // Streda
+                { s: 'TSV', start: '07:10', end: '08:45' }, // 0. a 1. hodina spojená
+                { s: 'INP', start: '08:50', end: '09:35' },
+                { s: 'TEM', start: '09:45', end: '11:35' }, // 3. a 4. hodina spojená
+                { s: 'OBP', start: '11:40', end: '13:20' }, // 5. a 6. hodina spojená
+                { s: 'TH', start: '13:30', end: '14:15' }
+            ],
+            4: [ // Štvrtok
+                { s: 'DDW', start: '08:00', end: '10:30' }, // 1. až 3. hodina spojená
+                { s: 'SJL', start: '10:50', end: '11:35' },
+                { s: 'OBN', start: '11:40', end: '12:25' },
+                { s: 'ANJ', start: '12:35', end: '14:15' } // 6. a 7. hodina spojená
+            ],
+            5: [ // Piatok
+                { s: 'ODP', start: '08:00', end: '09:35' }, // 1. a 2. hodina spojená
+                { s: 'NEJ', start: '09:45', end: '11:35' }, // 3. a 4. hodina spojená
+                { s: 'LIN', start: '11:40', end: '14:15' }  // 5. až 7. hodina spojená
+            ]
         };
 
-        // Uchovanie aktuálneho dňa, aby sme rozvrh neprekresľovali zbytočne každú sekundu
-        let currentDayIndex = -1;
+        // Pomocná funkcia: prevod času "HH:MM" na minúty od polnoci pre ľahké porovnávanie
+        function timeToMinutes(timeStr) {
+            const [h, m] = timeStr.split(':').map(Number);
+            return h * 60 + m;
+        }
+
+        // Pomocná premenná pre zabránenie zbytočného prekresľovania, ak sa minúta nezmenila
+        let lastRenderedMinute = -1;
 
         function updateDashboard() {
             const now = new Date();
+            const currentHours = now.getHours();
+            const currentMinutes = now.getMinutes();
+            const currentTotalMinutes = currentHours * 60 + currentMinutes;
+            const currentDay = now.getDay();
             
-            // 1. Aktualizácia ČASU
-            let hours = now.getHours().toString().padStart(2, '0');
-            let minutes = now.getMinutes().toString().padStart(2, '0');
-            document.getElementById('clock').textContent = `${hours}:${minutes}`;
+            // 1. Aktualizácia ČASU (vykonáva sa každú sekundu)
+            let hStr = currentHours.toString().padStart(2, '0');
+            let mStr = currentMinutes.toString().padStart(2, '0');
+            document.getElementById('clock').textContent = `${hStr}:${mStr}`;
             
-            // 2. Aktualizácia DÁTUMU (iba ak sa zmenil deň)
-            if (now.getDay() !== currentDayIndex) {
-                currentDayIndex = now.getDay();
-                
-                const days = ['N E D E Ľ A', 'P O N D E L O K', 'U T O R O K', 'S T R E D A', 'Š T V R T O K', 'P I A T O K', 'S O B O T A'];
-                const months = ['JANUÁR', 'FEBRUÁR', 'MAREC', 'APRÍL', 'MÁJ', 'JÚN', 'JÚL', 'AUGUST', 'SEPTEMBER', 'OKTÓBER', 'NOVEMBER', 'DECEMBER'];
-                
-                // Vykreslenie dňa a dátumu
-                document.getElementById('day').textContent = days[currentDayIndex];
-                document.getElementById('date').textContent = `${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+            // Rozvrh a dátum stačí aktualizovať len keď sa zmení minúta
+            if (currentTotalMinutes === lastRenderedMinute) return;
+            lastRenderedMinute = currentTotalMinutes;
 
-                // 3. Vykreslenie ROZVRHU
-                const scheduleContainer = document.getElementById('schedule');
-                scheduleContainer.innerHTML = ''; // Vymaže starý rozvrh
+            // 2. Aktualizácia DÁTUMU
+            const daysArr = ['N E D E Ľ A', 'P O N D E L O K', 'U T O R O K', 'S T R E D A', 'Š T V R T O K', 'P I A T O K', 'S O B O T A'];
+            const monthsArr = ['JANUÁR', 'FEBRUÁR', 'MAREC', 'APRÍL', 'MÁJ', 'JÚN', 'JÚL', 'AUGUST', 'SEPTEMBER', 'OKTÓBER', 'NOVEMBER', 'DECEMBER'];
+            document.getElementById('day').textContent = daysArr[currentDay];
+            document.getElementById('date').textContent = `${now.getDate()}. ${monthsArr[now.getMonth()]} ${now.getFullYear()}`;
 
-                const todaysSubjects = weeklySchedule[currentDayIndex];
+            // 3. Logika ROZVRHU
+            let displayDay = currentDay;
+            let label = "DNEŠNÝ ROZVRH";
+            let todaysSchedule = scheduleData[currentDay];
+            let isDayOver = false;
+
+            // Zistenie, či už je po poslednej hodine (alebo či je víkend)
+            if (todaysSchedule) {
+                const lastClass = todaysSchedule[todaysSchedule.length - 1];
+                if (currentTotalMinutes > timeToMinutes(lastClass.end)) {
+                    isDayOver = true;
+                }
+            } else {
+                isDayOver = true; // Víkend
+            }
+
+            // Nastavenie zobrazenia na ďalší deň
+            if (isDayOver) {
+                label = "ZAJTRAJŠÍ ROZVRH";
+                displayDay = currentDay + 1;
                 
-                todaysSubjects.forEach(subject => {
-                    const span = document.createElement('span');
-                    span.className = 'subject';
-                    span.textContent = subject;
-                    scheduleContainer.appendChild(span);
+                // Ak je piatok poobede, sobota alebo nedeľa -> ukáž pondelok
+                if (currentDay === 5 || currentDay === 6 || currentDay === 0) {
+                    displayDay = 1;
+                    label = "PONDELKOVÝ ROZVRH";
+                }
+            }
+
+            // Vykreslenie dlaždíc
+            const scheduleContainer = document.getElementById('schedule');
+            document.getElementById('schedule-label').textContent = label;
+            scheduleContainer.innerHTML = ''; 
+
+            const classesToDisplay = scheduleData[displayDay];
+
+            if (classesToDisplay) {
+                classesToDisplay.forEach(item => {
+                    const tile = document.createElement('div');
+                    tile.className = 'tile';
+
+                    // Ak ukazuje dnešok, skontroluj či táto hodina práve prebieha
+                    if (!isDayOver && displayDay === currentDay) {
+                        if (currentTotalMinutes >= timeToMinutes(item.start) && currentTotalMinutes <= timeToMinutes(item.end)) {
+                            tile.classList.add('active'); // Rozsvieti dlaždicu
+                        }
+                    }
+
+                    const subjectDiv = document.createElement('div');
+                    subjectDiv.className = 'tile-subject';
+                    subjectDiv.textContent = item.s;
+
+                    const timeDiv = document.createElement('div');
+                    timeDiv.className = 'tile-time';
+                    timeDiv.textContent = `${item.start} - ${item.end}`;
+
+                    tile.appendChild(subjectDiv);
+                    tile.appendChild(timeDiv);
+                    scheduleContainer.appendChild(tile);
                 });
             }
         }
