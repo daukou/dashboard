@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dauko Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDK (pre prepojenie s databázou) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
     <style>
         :root {
             --bg-color: #0f111a;
@@ -45,18 +50,27 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            flex: 1;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
         }
 
+        .panel-time { flex: 1; }
+        .panel-date { flex: 1; }
+        .panel-notes { 
+            flex: 1.5;
+            align-items: flex-start;
+            padding: 25px;
+            justify-content: flex-start;
+            overflow: hidden;
+        }
+
         #clock {
-            font-size: 8rem;
+            font-size: 7rem;
             font-weight: 800;
             letter-spacing: 2px;
         }
 
         #day {
-            font-size: 3.5rem;
+            font-size: 3rem;
             font-weight: 800;
             letter-spacing: 4px;
             white-space: nowrap;
@@ -65,9 +79,40 @@
         }
 
         #date {
-            font-size: 1.5rem;
+            font-size: 1.3rem;
             font-weight: 600;
             color: var(--text-muted);
+        }
+
+        .notes-label {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+        }
+
+        .notes-list {
+            list-style: none;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow-y: auto;
+            max-height: 80%;
+        }
+
+        .note-item {
+            display: flex;
+            align-items: center;
+            font-size: 1.1rem;
+            font-weight: 600;
+            background-color: rgba(255, 255, 255, 0.03);
+            padding: 12px 15px;
+            border-radius: 8px;
+            border-left: 4px solid #00d2ff;
+            word-break: break-word;
         }
 
         .bottom-row {
@@ -136,24 +181,25 @@
             transform: scale(1.02);
         }
 
-        .tile.active .tile-period {
-            color: rgba(255, 255, 255, 0.8);
-        }
-
-        .tile.active .tile-time {
-            color: rgba(255, 255, 255, 0.9);
-        }
+        .tile.active .tile-period { color: rgba(255, 255, 255, 0.8); }
+        .tile.active .tile-time { color: rgba(255, 255, 255, 0.9); }
     </style>
 </head>
 <body>
 
     <div class="top-row">
-        <div class="panel">
+        <div class="panel panel-time">
             <div id="clock">00:00</div>
         </div>
-        <div class="panel">
+        <div class="panel panel-date">
             <div id="day">DEŇ</div>
             <div id="date">00. MESIAC 0000</div>
+        </div>
+        <div class="panel panel-notes">
+            <div class="notes-label">Moje poznámky</div>
+            <ul class="notes-list" id="notes-container">
+                <li class="note-item" style="opacity: 0.5;">Načítavam...</li>
+            </ul>
         </div>
     </div>
 
@@ -163,8 +209,41 @@
     </div>
 
     <script>
+        // === SEM VLOŽ SVOJ KONFIGURAČNÝ OBJEKT Z FIREBASE ===
+          const firebaseConfig = {
+    apiKey: "AIzaSyBZmGJ715pJkMZJut9aSNfsm04oQH1YeCw",
+    authDomain: "dauko-dashboard.firebaseapp.com",
+    databaseURL: "https://dauko-dashboard-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "dauko-dashboard",
+    storageBucket: "dauko-dashboard.firebasestorage.app",
+    messagingSenderId: "112349370791",
+    appId: "1:112349370791:web:d9ab50d25ecd89bc55be82",
+    measurementId: "G-MZRFBJ25SZ"
+  };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // Realtime Počúvanie na zmeny v databáze
+        db.ref('notes').on('value', (snapshot) => {
+            const container = document.getElementById('notes-container');
+            container.innerHTML = '';
+            const data = snapshot.val();
+            
+            if (data) {
+                Object.keys(data).forEach(key => {
+                    const li = document.createElement('li');
+                    li.className = 'note-item';
+                    li.textContent = data[key].text;
+                    container.appendChild(li);
+                });
+            } else {
+                container.innerHTML = '<li class="note-item" style="opacity: 0.4;">Žiadne poznámky</li>';
+            }
+        });
+
         const scheduleData = {
-            1: [ // Pondelok
+            1: [ 
                 { p: 1, s: 'SJL', start: '08:00', end: '08:45' },
                 { p: 2, s: 'MAT', start: '08:50', end: '09:35' },
                 { p: 3, s: 'INP', start: '09:45', end: '10:30' },
@@ -173,7 +252,7 @@
                 { p: 6, s: 'PBE', start: '12:35', end: '13:20' },
                 { p: 7, s: 'PBE', start: '13:30', end: '14:15' }
             ],
-            2: [ // Utorok
+            2: [ 
                 { p: 1, s: 'OBP', start: '08:00', end: '08:45' },
                 { p: 2, s: 'OBP', start: '08:50', end: '09:35' },
                 { p: 3, s: 'ANJ', start: '09:45', end: '10:30' },
@@ -181,7 +260,7 @@
                 { p: 5, s: 'MAT', start: '11:40', end: '12:25' },
                 { p: 6, s: 'NEJ', start: '12:35', end: '13:20' }
             ],
-            3: [ // Streda
+            3: [ 
                 { p: 0, s: 'TSV', start: '07:10', end: '07:55' },
                 { p: 1, s: 'TSV', start: '08:00', end: '08:45' },
                 { p: 2, s: 'INP', start: '08:50', end: '09:35' },
@@ -191,7 +270,7 @@
                 { p: 6, s: 'OBP', start: '12:35', end: '13:20' },
                 { p: 7, s: 'TH',  start: '13:30', end: '14:15' }
             ],
-            4: [ // Štvrtok
+            4: [ 
                 { p: 1, s: 'DDW', start: '08:00', end: '08:45' },
                 { p: 2, s: 'DDW', start: '08:50', end: '09:35' },
                 { p: 3, s: 'DDW', start: '09:45', end: '10:30' },
@@ -200,7 +279,7 @@
                 { p: 6, s: 'ANJ', start: '12:35', end: '13:20' },
                 { p: 7, s: 'ANJ', start: '13:30', end: '14:15' }
             ],
-            5: [ // Piatok
+            5: [ 
                 { p: 1, s: 'ODP', start: '08:00', end: '08:45' },
                 { p: 2, s: 'ODP', start: '08:50', end: '09:35' },
                 { p: 3, s: 'NEJ', start: '09:45', end: '10:30' },
