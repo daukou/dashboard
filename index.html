@@ -7,7 +7,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            /* Tmavé farby v štýle moderného dashboardu */
             --bg-color: #0f111a;
             --panel-bg: #1c2033;
             --text-main: #ffffff;
@@ -28,16 +27,15 @@
             height: 100vh;
             display: flex;
             flex-direction: column;
-            padding: 12px; /* Minimálny okraj 12px od krajov celej obrazovky */
-            gap: 12px;     /* Medzera medzi horným a dolným blokom */
+            padding: 12px;
+            gap: 12px;
             overflow: hidden;
         }
 
-        /* HORNÝ RIADOK (Čas a Dátum) */
         .top-row {
             display: flex;
-            height: 45%; /* Horné panely zaberajú 45% výšky obrazovky */
-            gap: 12px;   /* Medzera medzi panelmi */
+            height: 45%;
+            gap: 12px;
         }
 
         .panel {
@@ -47,11 +45,10 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            flex: 1; /* Obe horné karty (čas aj dátum) budú rovnako široké */
+            flex: 1;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
         }
 
-        /* Štýly pre texty v paneloch */
         #clock {
             font-size: 8rem;
             font-weight: 800;
@@ -61,8 +58,8 @@
         #day {
             font-size: 3.5rem;
             font-weight: 800;
-            letter-spacing: 4px; /* Zmenšený rozostup */
-            white-space: nowrap; /* Zabezpečí, že sa slovo nikdy nezalomí */
+            letter-spacing: 4px;
+            white-space: nowrap;
             margin-bottom: 10px;
             text-transform: uppercase;
         }
@@ -73,9 +70,8 @@
             color: var(--text-muted);
         }
 
-        /* SPODNÝ RIADOK (Rozvrh) */
         .bottom-row {
-            flex: 1; /* Zaberie zvyšok výšky (55%) */
+            flex: 1;
             background-color: var(--panel-bg);
             border-radius: 16px;
             padding: 20px;
@@ -95,13 +91,12 @@
 
         #schedule {
             display: flex;
-            flex: 1; /* Kontajner pre dlaždice sa roztiahne na zvyšok panela */
+            flex: 1;
             gap: 12px;
         }
 
-        /* Dlaždice predmetov */
         .tile {
-            flex: 1; /* Všetky dlaždice sa rovnomerne roztiahnu na šírku */
+            flex: 1;
             background-color: rgba(255, 255, 255, 0.03);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 12px;
@@ -112,10 +107,19 @@
             transition: all 0.3s ease;
         }
 
+        .tile-period {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 4px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
         .tile-subject {
             font-size: 2.5rem;
             font-weight: 800;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
         }
 
         .tile-time {
@@ -124,13 +128,16 @@
             color: var(--text-muted);
         }
 
-        /* Zvýraznenie práve prebiehajúcej hodiny (Žiarivý gradient) */
         .tile.active {
             background: var(--accent-gradient);
             border: none;
             color: #ffffff;
             box-shadow: 0 0 25px rgba(0, 210, 255, 0.4);
-            transform: scale(1.02); /* Jemné zväčšenie aktívnej hodiny */
+            transform: scale(1.02);
+        }
+
+        .tile.active .tile-period {
+            color: rgba(255, 255, 255, 0.8);
         }
 
         .tile.active .tile-time {
@@ -140,7 +147,6 @@
 </head>
 <body>
 
-    <!-- Horná časť s časom a dátumom -->
     <div class="top-row">
         <div class="panel">
             <div id="clock">00:00</div>
@@ -151,62 +157,56 @@
         </div>
     </div>
 
-    <!-- Spodná časť s rozvrhom -->
     <div class="bottom-row">
         <div id="schedule-label">DNEŠNÝ ROZVRH</div>
-        <div id="schedule">
-            <!-- Dlaždice sa vygenerujú cez JavaScript -->
-        </div>
+        <div id="schedule"></div>
     </div>
 
     <script>
-        // Kompletný rozvrh, VŠETKY spojené hodiny sú rozdelené na samostatné!
         const scheduleData = {
             1: [ // Pondelok
-                { s: 'SJL', start: '08:00', end: '08:45' },
-                { s: 'MAT', start: '08:50', end: '09:35' },
-                { s: 'INP', start: '09:45', end: '10:30' },
-                { s: 'ANJ', start: '10:50', end: '11:35' },
-                { s: 'LIN', start: '11:40', end: '12:25' },
-                { s: 'PBE', start: '12:35', end: '13:20' }, // 6. hod
-                { s: 'PBE', start: '13:30', end: '14:15' }  // 7. hod
+                { p: 1, s: 'SJL', start: '08:00', end: '08:45' },
+                { p: 2, s: 'MAT', start: '08:50', end: '09:35' },
+                { p: 3, s: 'INP', start: '09:45', end: '10:30' },
+                { p: 4, s: 'ANJ', start: '10:50', end: '11:35' },
+                { p: 5, s: 'LIN', start: '11:40', end: '12:25' },
+                { p: 6, s: 'PBE', start: '12:35', end: '13:20' },
+                { p: 7, s: 'PBE', start: '13:30', end: '14:15' }
             ],
             2: [ // Utorok
-                { s: 'OBP', start: '08:00', end: '08:45' }, // 1. hod
-                { s: 'OBP', start: '08:50', end: '09:35' }, // 2. hod
-                { s: 'ANJ', start: '09:45', end: '10:30' },
-                { s: 'SJL', start: '10:50', end: '11:35' },
-                { s: 'MAT', start: '11:40', end: '12:25' },
-                { s: 'NEJ', start: '12:35', end: '13:20' }, // 6. hod
-                { s: 'NEJ', start: '13:30', end: '14:15' }  // 7. hod
+                { p: 1, s: 'OBP', start: '08:00', end: '08:45' },
+                { p: 2, s: 'OBP', start: '08:50', end: '09:35' },
+                { p: 3, s: 'ANJ', start: '09:45', end: '10:30' },
+                { p: 4, s: 'SJL', start: '10:50', end: '11:35' },
+                { p: 5, s: 'MAT', start: '11:40', end: '12:25' },
+                { p: 6, s: 'NEJ', start: '12:35', end: '13:20' }
             ],
             3: [ // Streda
-                { s: 'TSV', start: '07:10', end: '07:55' }, // 0. hod
-                { s: 'TSV', start: '08:00', end: '08:45' }, // 1. hod
-                { s: 'INP', start: '08:50', end: '09:35' },
-                { s: 'TEM', start: '09:45', end: '10:30' }, // 3. hod
-                { s: 'TEM', start: '10:50', end: '11:35' }, // 4. hod
-                { s: 'OBP', start: '11:40', end: '12:25' }, // 5. hod
-                { s: 'OBP', start: '12:35', end: '13:20' }, // 6. hod
-                { s: 'TH',  start: '13:30', end: '14:15' }
+                { p: 0, s: 'TSV', start: '07:10', end: '07:55' },
+                { p: 1, s: 'TSV', start: '08:00', end: '08:45' },
+                { p: 2, s: 'INP', start: '08:50', end: '09:35' },
+                { p: 3, s: 'TEM', start: '09:45', end: '10:30' },
+                { p: 4, s: 'TEM', start: '10:50', end: '11:35' },
+                { p: 5, s: 'OBP', start: '11:40', end: '12:25' },
+                { p: 6, s: 'OBP', start: '12:35', end: '13:20' },
+                { p: 7, s: 'TH',  start: '13:30', end: '14:15' }
             ],
             4: [ // Štvrtok
-                { s: 'DDW', start: '08:00', end: '08:45' }, // 1. hod
-                { s: 'DDW', start: '08:50', end: '09:35' }, // 2. hod
-                { s: 'DDW', start: '09:45', end: '10:30' }, // 3. hod
-                { s: 'SJL', start: '10:50', end: '11:35' },
-                { s: 'OBN', start: '11:40', end: '12:25' },
-                { s: 'ANJ', start: '12:35', end: '13:20' }, // 6. hod
-                { s: 'ANJ', start: '13:30', end: '14:15' }  // 7. hod
+                { p: 1, s: 'DDW', start: '08:00', end: '08:45' },
+                { p: 2, s: 'DDW', start: '08:50', end: '09:35' },
+                { p: 3, s: 'DDW', start: '09:45', end: '10:30' },
+                { p: 4, s: 'SJL', start: '10:50', end: '11:35' },
+                { p: 5, s: 'OBN', start: '11:40', end: '12:25' },
+                { p: 6, s: 'ANJ', start: '12:35', end: '13:20' },
+                { p: 7, s: 'ANJ', start: '13:30', end: '14:15' }
             ],
             5: [ // Piatok
-                { s: 'ODP', start: '08:00', end: '08:45' }, // 1. hod
-                { s: 'ODP', start: '08:50', end: '09:35' }, // 2. hod
-                { s: 'NEJ', start: '09:45', end: '10:30' }, // 3. hod
-                { s: 'NEJ', start: '10:50', end: '11:35' }, // 4. hod
-                { s: 'LIN', start: '11:40', end: '12:25' }, // 5. hod
-                { s: 'LIN', start: '12:35', end: '13:20' }, // 6. hod
-                { s: 'LIN', start: '13:30', end: '14:15' }  // 7. hod
+                { p: 1, s: 'ODP', start: '08:00', end: '08:45' },
+                { p: 2, s: 'ODP', start: '08:50', end: '09:35' },
+                { p: 3, s: 'NEJ', start: '09:45', end: '10:30' },
+                { p: 4, s: 'NEJ', start: '10:50', end: '11:35' },
+                { p: 5, s: 'LIN', start: '11:40', end: '12:25' },
+                { p: 6, s: 'LIN', start: '12:35', end: '13:20' }
             ]
         };
 
@@ -222,9 +222,8 @@
             const currentHours = now.getHours();
             const currentMinutes = now.getMinutes();
             const currentTotalMinutes = currentHours * 60 + currentMinutes;
-            const currentDay = now.getDay(); // 0 nedeľa, 1 pondelok...
+            const currentDay = now.getDay();
             
-            // 1. ČAS
             let hStr = currentHours.toString().padStart(2, '0');
             let mStr = currentMinutes.toString().padStart(2, '0');
             document.getElementById('clock').textContent = `${hStr}:${mStr}`;
@@ -232,16 +231,13 @@
             if (currentTotalMinutes === lastRenderedMinute) return;
             lastRenderedMinute = currentTotalMinutes;
 
-            // 2. DÁTUM A DEŇ
             const daysArr = ['Nedeľa', 'Pondelok', 'Utorok', 'Streda', 'Štvrtok', 'Piatok', 'Sobota'];
             const monthsArr = ['január', 'február', 'marec', 'apríl', 'máj', 'jún', 'júl', 'august', 'september', 'október', 'november', 'december'];
             
-            // Pomocou medzier pridáme žiadaný vzhľad do dňa, ale držíme ho bez zalamovania
             let dayText = daysArr[currentDay].split('').join(' ');
             document.getElementById('day').textContent = dayText;
             document.getElementById('date').textContent = `${now.getDate()}. ${monthsArr[now.getMonth()]} ${now.getFullYear()}`;
 
-            // 3. ROZVRH LOKIKA
             let displayDay = currentDay;
             let label = "Dnešný rozvrh";
             let todaysSchedule = scheduleData[currentDay];
@@ -266,7 +262,6 @@
                 }
             }
 
-            // 4. VYKRESLENIE DLAŽDÍC
             const scheduleContainer = document.getElementById('schedule');
             document.getElementById('schedule-label').textContent = label;
             scheduleContainer.innerHTML = ''; 
@@ -284,6 +279,10 @@
                         }
                     }
 
+                    const periodDiv = document.createElement('div');
+                    periodDiv.className = 'tile-period';
+                    periodDiv.textContent = `${item.p}. hodina`;
+
                     const subjectDiv = document.createElement('div');
                     subjectDiv.className = 'tile-subject';
                     subjectDiv.textContent = item.s;
@@ -292,6 +291,7 @@
                     timeDiv.className = 'tile-time';
                     timeDiv.textContent = `${item.start} - ${item.end}`;
 
+                    tile.appendChild(periodDiv);
                     tile.appendChild(subjectDiv);
                     tile.appendChild(timeDiv);
                     scheduleContainer.appendChild(tile);
