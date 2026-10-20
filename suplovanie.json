@@ -1,1 +1,6 @@
-{"has_changes": false, "changes": []}
+{
+  "has_changes": false,
+  "error": "'Edupage' object has no attribute 'get_substitutions'",
+  "traceback": "Traceback (most recent call last):\n  File \"/home/runner/work/dashboard/dashboard/fetch_edupage.py\", line 24, in main\n    substitutions = edupage.get_substitutions(target_date)\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^\nAttributeError: 'Edupage' object has no attribute 'get_substitutions'\n",
+  "changes": []
+}
