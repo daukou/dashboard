@@ -1,5 +1,6 @@
 import json
 import traceback
+import requests
 from datetime import datetime, timedelta
 from edupage_api import Edupage
 
@@ -15,44 +16,69 @@ def main():
         edupage.login(USERNAME, PASSWORD, EDUPAGE_SUBDOMAIN)
         print("Prihlásenie na EduPage bolo úspešné!")
 
-        # Ak je po 15:00, pozrieme sa na zajtrajšok, inak na dnešok
         now = datetime.now()
         target_date = now.date()
         if now.hour >= 15:
             target_date = now.date() + timedelta(days=1)
 
-        substitutions = edupage.get_substitutions(target_date)
-
+        # 1. Skúsime vytiahnuť dáta cez rozvrh/suplovanie v knižnici
         changes = []
-        if substitutions:
-            for sub in substitutions:
-                # Načítame textové údaje zo suplovania
-                sub_text = str(sub)
-                
-                # Ak zmena obsahuje tvoju triedu alebo je všeobecná
-                if not TARGET_CLASS or TARGET_CLASS in sub_text or "všetky" in sub_text.lower():
-                    period = getattr(sub, 'period', '?')
-                    subject = getattr(sub, 'subject', 'Zmena')
-                    room = getattr(sub, 'room', '')
-                    note = getattr(sub, 'comment', sub_text)
+        
+        # Zistíme dostupné metódy na objekte edupage pre kontrolu
+        available_methods = [m for m in dir(edupage) if not m.startswith('_')]
+        print(f"Dostupné metódy v Edupage: {available_methods}")
 
-                    changes.append({
-                        "period": period,
-                        "subject": str(subject),
-                        "room": str(room) if room else "",
-                        "note": str(note)
-                    })
+        # Skúsime nájsť metódu pre rozvrh alebo suplovanie
+        sub_data = None
+        if hasattr(edupage, 'get_timetable'):
+            try:
+                sub_data = edupage.get_timetable(target_date)
+            except Exception as e:
+                print(f"get_timetable zlyhal: {e}")
+
+        if hasattr(edupage, 'get_missing_teachers'):
+            try:
+                sub_data = edupage.get_missing_teachers(target_date)
+            except Exception as e:
+                print(f"get_missing_teachers zlyhal: {e}")
+
+        # 2. Ak sa nepodarilo cez metódy knižnice, stiahneme JSON endpoint priamo zo školy
+        if not changes:
+            date_str = target_date.strftime("%Y-%m-%d")
+            url = f"https://{EDUPAGE_SUBDOMAIN}.edupage.org/gserver/substitution.r?gserver_function=getsubstitution&date={date_str}"
+            
+            # Použijeme session z edupage_api, ak existuje, alebo štandardný request
+            session = getattr(edupage, 'session', requests.Session())
+            res = session.get(url)
+            
+            if res.status_code == 200:
+                try:
+                    data = res.json()
+                    # Ak EduPage vrátil zmeny v JSON formáte
+                    if "rows" in data:
+                        for row in data["rows"]:
+                            text_row = str(row)
+                            if TARGET_CLASS in text_row or not TARGET_CLASS:
+                                changes.append({
+                                    "period": row.get("period", "?"),
+                                    "subject": row.get("header", "Zmena"),
+                                    "room": row.get("classroom", ""),
+                                    "note": row.get("info", "Suplovanie")
+                                })
+                except Exception:
+                    pass
 
         output_data = {
             "has_changes": len(changes) > 0,
             "date": target_date.strftime("%d.%m.%Y"),
+            "available_methods": available_methods,
             "changes": changes
         }
 
         with open("suplovanie.json", "w", encoding="utf-8") as f:
             json.dump(output_data, f, ensure_ascii=False, indent=2)
 
-        print(f"Súbor uložený. Nájdených zmien: {len(changes)}")
+        print(f"Súbor uloženie dokončené. Zmien: {len(changes)}")
 
     except Exception as e:
         print(f"Chyba: {e}")
