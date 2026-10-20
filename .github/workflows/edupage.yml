@@ -3,14 +3,14 @@ name: EduPage Sync
 on:
   schedule:
     - cron: '0 * * * *' # Spustí sa každú hodinu
-  workflow_dispatch: # Umožní spustiť skript aj manuálne tlačidlom
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
   update-substitution:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest # <--- TOTO SME ZMENILI
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -22,7 +22,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install edupage-api
+          pip install edupage-api requests
 
       - name: Run EduPage script
         run: python fetch_edupage.py
