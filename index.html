@@ -189,6 +189,23 @@
             transform: scale(0.95);
         }
 
+        /* Banner pre Suplovanie */
+        #substitution-banner {
+            display: none;
+            background: rgba(255, 65, 108, 0.15);
+            border: 1px solid #ff416c;
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-size: 0.95rem;
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(255, 65, 108, 0.2);
+        }
+
+        #substitution-text {
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
         /* Spodný riadok rozvrhu */
         .bottom-row {
             flex: 1;
@@ -198,6 +215,7 @@
             display: flex;
             flex-direction: column;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
         }
 
         #schedule-label {
@@ -299,6 +317,13 @@
         </div>
     </div>
 
+    <!-- Banner pre EduPage suplovanie -->
+    <div id="substitution-banner">
+        <strong style="color: #ff416c;">⚠️ ZMENA ROZVRHU:</strong>
+        <span id="substitution-text"></span>
+    </div>
+
+    <!-- Spodný riadok pre rozvrh -->
     <div class="bottom-row">
         <div id="schedule-label">DNEŠNÝ ROZVRH</div>
         <div id="schedule"></div>
@@ -352,7 +377,6 @@
             }
         });
 
-        // Kontrola, či NAS neumrelo (ak neposlalo dáta viac ako 3 minúty)
         setInterval(() => {
             if (Date.now() - lastUpdateTime > 180000) {
                 document.getElementById('nas-used-text').textContent = "OFF";
@@ -370,6 +394,31 @@
                 });
             }
         }
+
+        // 4. LOGIKA PRE EDUPAGE SUPLOVANIE
+        function checkSubstitution() {
+            fetch('suplovanie.json?t=' + Date.now())
+                .then(response => {
+                    if (!response.ok) throw new Error('Súbor zatiaľ neexistuje');
+                    return response.json();
+                })
+                .then(data => {
+                    if (data && data.has_changes && data.changes.length > 0) {
+                        const banner = document.getElementById('substitution-banner');
+                        const textContainer = document.getElementById('substitution-text');
+                        
+                        let text = data.changes.map(c => `${c.period}. hodina: ${c.subject} (${c.room}) - ${c.note}`).join(' | ');
+                        textContainer.textContent = text;
+                        banner.style.display = 'block';
+                    }
+                })
+                .catch(err => {
+                    console.log("Suplovanie:", err.message);
+                });
+        }
+
+        checkSubstitution();
+        setInterval(checkSubstitution, 300000); // Kontrola každých 5 minút
 
         // === LOGIKA PRE ROZVRH A ČAS ===
         const scheduleData = {
