@@ -11,25 +11,27 @@ PASSWORD = "Davidko369*"
 TARGET_CLASS = "III.A"  # Tvoja trieda tak, ako sa zobrazuje na EduPage
 
 def main():
-    edupage = Edupage()
-    edupage.session.headers.update({
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-    })
-
     logged_in = False
-    for attempt in range(1, 4):
+    edupage = None
+    
+    # Zvýšený počet pokusov na 5, pri každom vytvoríme úplne nové pripojenie
+    for attempt in range(1, 6):
         try:
             print(f"Pokus o prihlásenie č. {attempt}...")
+            edupage = Edupage()
+            edupage.session.headers.update({
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            })
             edupage.login(USERNAME, PASSWORD, EDUPAGE_SUBDOMAIN)
             logged_in = True
             print("Prihlásenie bolo úspešné!")
             break
         except Exception as e:
             print(f"Pokus {attempt} zlyhal: {e}")
-            time.sleep(5)
+            time.sleep(10) # Počkáme 10 sekúnd, kým to skúsime znova
 
-    if not logged_in:
-        raise ConnectionError("Nepodarilo sa nadviazať spojenie s EduPage serverom.")
+    if not logged_in or not edupage:
+        raise ConnectionError("Nepodarilo sa nadviazať spojenie s EduPage serverom ani po 5 pokusoch.")
 
     now = datetime.now()
     target_date = now.date()
@@ -45,15 +47,12 @@ def main():
             item_str = str(item)
             
             if not TARGET_CLASS or TARGET_CLASS in item_str or "všetky" in item_str.lower():
-                # Vytiahnutie čísla hodiny (lesson_n)
                 lesson_match = re.search(r"lesson_n=(\d+)", item_str)
                 period = lesson_match.group(1) if lesson_match else "?"
 
-                # Vytiahnutie textu (title)
                 title_match = re.search(r"title='([^']+)'", item_str)
                 title_text = title_match.group(1) if title_match else item_str
 
-                # Rozpoznanie predmetu (napr. TEM, SJL...)
                 subj_match = re.search(r"([A-Z0-9]{2,5})\s*-", title_text)
                 subject = subj_match.group(1) if subj_match else "Zmena"
 
