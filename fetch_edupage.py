@@ -1,25 +1,55 @@
-import os
 import json
-import urllib.request
+import os
+from edupage_api import Edupage
 
-# Nastavenia EduPage
-EDUPAGE_URL = "https://TVOJA_SKOLA.edupage.org" # Uprav na URL tvojej skoly
+# === DÔLEŽITÉ: VYPLŇ SVOJE ÚDAJE ===
+EDUPAGE_SUBDOMAIN = "spseke"  # iba časť pred .edupage.org (napr. spseke)
+USERNAME = "DavidLukac48"
+PASSWORD = "Davidko369*"
 
-def get_substitution():
-    # Sem pride logika stiahnutia suplovania. 
-    # Zatial vratime testovacie data, aby sme overili, ze automatizacia na GitHube funguje.
-    sample_data = {
-        "has_changes": True,
-        "date": "Zajtra",
-        "changes": [
-            {"period": 2, "subject": "OBP", "room": "24", "note": "Supluje Mgr. Novak"},
-            {"period": 4, "subject": "SJL", "room": "Odpadla", "note": "Hodina zrusena"}
-        ]
-    }
-    return sample_data
+def main():
+    try:
+        # Prihlásenie na EduPage
+        edupage = Edupage()
+        edupage.login(USERNAME, PASSWORD, EDUPAGE_SUBDOMAIN)
+        print("Prihlásenie na EduPage bolo úspešné!")
+
+        # Stiahnutie suplovania
+        substitutions = edupage.get_substitutions()
+
+        changes = []
+        if substitutions:
+            for sub in substitutions:
+                # Načítame detaily suplovania
+                period = getattr(sub, 'period', '?')
+                subject = getattr(sub, 'subject', 'Zmena')
+                room = getattr(sub, 'room', '')
+                note = getattr(sub, 'comment', 'Suplovanie')
+
+                changes.append({
+                    "period": period,
+                    "subject": str(subject),
+                    "room": str(room) if room else "",
+                    "note": str(note)
+                })
+
+        # Príprava dát pre Dashboard
+        output_data = {
+            "has_changes": len(changes) > 0,
+            "changes": changes
+        }
+
+        # Uloženie do súboru suplovanie.json
+        with open("suplovanie.json", "w", encoding="utf-8") as f:
+            json.dump(output_data, f, ensure_ascii=False, indent=2)
+
+        print(f"Súbor suplovanie.json bol uložený. Nádených zmien: {len(changes)}")
+
+    except Exception as e:
+        print(f"Chyba pri sťahovaní z EduPage: {e}")
+        # V prípade chyby vytvoríme prázdny súbor, aby dashboard nepadol
+        with open("suplovanie.json", "w", encoding="utf-8") as f:
+            json.dump({"has_changes": False, "changes": []}, f)
 
 if __name__ == "__main__":
-    data = get_substitution()
-    with open("suplovanie.json", "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-    print("Suplovanie bolo uspesne ulozene do suplovanie.json")
+    main()
