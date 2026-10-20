@@ -18,6 +18,7 @@
             --text-muted: #8a92b2;
             --accent-gradient: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
             --danger-gradient: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+            --warning-gradient: linear-gradient(135deg, #f7b731 0%, #ffa801 100%);
         }
 
         * {
@@ -40,7 +41,7 @@
 
         .top-row {
             display: flex;
-            height: 45%;
+            height: 42%;
             gap: 12px;
         }
 
@@ -128,8 +129,8 @@
         /* NAS Kruhový Graf */
         .pie-chart-container {
             position: relative;
-            width: 110px;
-            height: 110px;
+            width: 100px;
+            height: 100px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -185,25 +186,16 @@
             margin-top: 10px;
         }
 
-        .btn-shutdown:active {
-            transform: scale(0.95);
-        }
-
         /* Banner pre Suplovanie */
         #substitution-banner {
             display: none;
             background: rgba(255, 65, 108, 0.15);
             border: 1px solid #ff416c;
             border-radius: 12px;
-            padding: 12px 16px;
-            font-size: 0.95rem;
+            padding: 10px 16px;
+            font-size: 0.9rem;
             color: #fff;
             box-shadow: 0 4px 15px rgba(255, 65, 108, 0.2);
-        }
-
-        #substitution-text {
-            font-weight: 600;
-            margin-left: 8px;
         }
 
         /* Spodný riadok rozvrhu */
@@ -242,7 +234,10 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
+            padding: 8px;
+            text-align: center;
             transition: all 0.3s ease;
+            position: relative;
         }
 
         .tile-period {
@@ -255,17 +250,26 @@
         }
 
         .tile-subject {
-            font-size: 2.5rem;
+            font-size: 2.2rem;
             font-weight: 800;
             margin-bottom: 4px;
         }
 
         .tile-time {
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             font-weight: 600;
             color: var(--text-muted);
         }
 
+        .tile-sub-info {
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: #ff416c;
+            margin-top: 4px;
+            line-height: 1.1;
+        }
+
+        /* Aktívna prebiehajúca hodina */
         .tile.active {
             background: var(--accent-gradient);
             border: none;
@@ -276,6 +280,15 @@
 
         .tile.active .tile-period { color: rgba(255, 255, 255, 0.8); }
         .tile.active .tile-time { color: rgba(255, 255, 255, 0.9); }
+
+        /* Zmenená/suplovaná hodina */
+        .tile.substituted {
+            border: 2px solid #ff416c;
+            background: rgba(255, 65, 108, 0.1);
+        }
+        .tile.substituted .tile-subject {
+            color: #ff416c;
+        }
     </style>
 </head>
 <body>
@@ -345,7 +358,7 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // 1. LOGIKA PRE POZNÁMKY
+        // 1. POZNÁMKY
         db.ref('notes').on('value', (snapshot) => {
             const container = document.getElementById('notes-container');
             container.innerHTML = '';
@@ -363,7 +376,7 @@
             }
         });
 
-        // 2. LOGIKA PRE NAS GRAF
+        // 2. NAS GRAF
         let lastKnownPercent = null;
         let lastUpdateTime = Date.now();
 
@@ -384,7 +397,7 @@
             }
         }, 10000);
 
-        // 3. LOGIKA PRE VYPNUTIE NAS
+        // 3. SHUTDOWN NAS
         function shutdownNAS() {
             if (confirm("Naozaj chceš vypnúť Synology NAS? Bude to trvať do 60 sekúnd.")) {
                 db.ref('nas/command').set('shutdown').then(() => {
@@ -395,6 +408,9 @@
             }
         }
 
+        // Globálna premenná pre zmeny
+        let currentSubstitutions = [];
+
         // 4. LOGIKA PRE EDUPAGE SUPLOVANIE
         function checkSubstitution() {
             fetch('suplovanie.json?t=' + Date.now())
@@ -404,21 +420,23 @@
                 })
                 .then(data => {
                     if (data && data.has_changes && data.changes.length > 0) {
+                        currentSubstitutions = data.changes;
                         const banner = document.getElementById('substitution-banner');
                         const textContainer = document.getElementById('substitution-text');
                         
-                        let text = data.changes.map(c => `${c.period}. hodina: ${c.subject} (${c.room}) - ${c.note}`).join(' | ');
+                        let text = data.changes.map(c => `${c.period}. hodina: ${c.info}`).join(' | ');
                         textContainer.textContent = text;
                         banner.style.display = 'block';
+                    } else {
+                        currentSubstitutions = [];
+                        document.getElementById('substitution-banner').style.display = 'none';
                     }
+                    updateDashboard(); // Prekresliť rozvrh so suplovaním
                 })
                 .catch(err => {
                     console.log("Suplovanie:", err.message);
                 });
         }
-
-        checkSubstitution();
-        setInterval(checkSubstitution, 300000); // Kontrola každých 5 minút
 
         // === LOGIKA PRE ROZVRH A ČAS ===
         const scheduleData = {
@@ -485,9 +503,6 @@
             let hStr = currentHours.toString().padStart(2, '0');
             let mStr = currentMinutes.toString().padStart(2, '0');
             document.getElementById('clock').textContent = `${hStr}:${mStr}`;
-            
-            if (currentTotalMinutes === lastRenderedMinute) return;
-            lastRenderedMinute = currentTotalMinutes;
 
             const daysArr = ['Nedeľa', 'Pondelok', 'Utorok', 'Streda', 'Štvrtok', 'Piatok', 'Sobota'];
             const monthsArr = ['január', 'február', 'marec', 'apríl', 'máj', 'jún', 'júl', 'august', 'september', 'október', 'november', 'december'];
@@ -531,6 +546,13 @@
                     const tile = document.createElement('div');
                     tile.className = 'tile';
 
+                    // Kontrola, či na túto hodinu existuje suplovanie
+                    const subMatch = currentSubstitutions.find(s => s.period === item.p);
+
+                    if (subMatch) {
+                        tile.classList.add('substituted');
+                    }
+
                     if (!isDayOver && displayDay === currentDay) {
                         if (currentTotalMinutes >= timeToMinutes(item.start) && currentTotalMinutes <= timeToMinutes(item.end)) {
                             tile.classList.add('active'); 
@@ -552,10 +574,25 @@
                     tile.appendChild(periodDiv);
                     tile.appendChild(subjectDiv);
                     tile.appendChild(timeDiv);
+
+                    if (subMatch) {
+                        const subInfoDiv = document.createElement('div');
+                        subInfoDiv.className = 'tile-sub-info';
+                        
+                        // Zjednodušený výpis zmeny (napr. Učebňa 28A)
+                        let roomMatch = subMatch.info.match(/➔\s*([0-9A-Z]+)/);
+                        let roomText = roomMatch ? ` (učeňba ${roomMatch[1]})` : '';
+                        subInfoDiv.textContent = `ZMENA${roomText}`;
+                        tile.appendChild(subInfoDiv);
+                    }
+
                     scheduleContainer.appendChild(tile);
                 });
             }
         }
+
+        checkSubstitution();
+        setInterval(checkSubstitution, 300000); // Obnoviť suplovanie každých 5 minút
 
         updateDashboard();
         setInterval(updateDashboard, 1000);
