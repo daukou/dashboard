@@ -6,7 +6,7 @@
     <title>Dauko Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
     
-    <!-- Firebase SDK (pre prepojenie s databázou) -->
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 
@@ -17,6 +17,7 @@
             --text-main: #ffffff;
             --text-muted: #8a92b2;
             --accent-gradient: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
+            --danger-gradient: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
         }
 
         * {
@@ -51,70 +52,144 @@
             justify-content: center;
             align-items: center;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            position: relative;
         }
 
         .panel-time { flex: 1; }
         .panel-date { flex: 1; }
         .panel-notes { 
-            flex: 1.5;
+            flex: 1.2;
             align-items: flex-start;
-            padding: 25px;
+            padding: 20px;
             justify-content: flex-start;
             overflow: hidden;
         }
+        
+        .panel-nas {
+            flex: 1;
+            padding: 20px;
+            justify-content: space-between;
+            align-items: center;
+        }
 
         #clock {
-            font-size: 7rem;
+            font-size: 6rem;
             font-weight: 800;
             letter-spacing: 2px;
         }
 
         #day {
-            font-size: 3rem;
+            font-size: 2.5rem;
             font-weight: 800;
             letter-spacing: 4px;
             white-space: nowrap;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             text-transform: uppercase;
         }
 
         #date {
-            font-size: 1.3rem;
+            font-size: 1.1rem;
             font-weight: 600;
             color: var(--text-muted);
         }
 
-        .notes-label {
-            font-size: 1rem;
+        .panel-label {
+            font-size: 0.9rem;
             font-weight: 700;
             color: var(--text-muted);
             letter-spacing: 2px;
-            margin-bottom: 15px;
             text-transform: uppercase;
+            width: 100%;
+            text-align: left;
+            margin-bottom: 10px;
         }
 
+        /* Poznámky */
         .notes-list {
             list-style: none;
             width: 100%;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 8px;
             overflow-y: auto;
             max-height: 80%;
         }
 
         .note-item {
-            display: flex;
-            align-items: center;
-            font-size: 1.1rem;
+            font-size: 0.95rem;
             font-weight: 600;
             background-color: rgba(255, 255, 255, 0.03);
-            padding: 12px 15px;
+            padding: 10px 12px;
             border-radius: 8px;
             border-left: 4px solid #00d2ff;
             word-break: break-word;
         }
 
+        /* NAS Kruhový Graf */
+        .pie-chart-container {
+            position: relative;
+            width: 110px;
+            height: 110px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .pie-chart {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: conic-gradient(rgba(255, 255, 255, 0.08) 0% 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background 0.5s ease;
+        }
+
+        .pie-chart-inner {
+            width: 75%;
+            height: 75%;
+            background-color: var(--panel-bg);
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .nas-percent {
+            font-size: 1.2rem;
+            font-weight: 800;
+        }
+
+        .nas-status-text {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .btn-shutdown {
+            background: var(--danger-gradient);
+            border: none;
+            color: white;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.8rem;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 75, 43, 0.3);
+            transition: all 0.2s ease;
+            width: 100%;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 10px;
+        }
+
+        .btn-shutdown:active {
+            transform: scale(0.95);
+        }
+
+        /* Spodný riadok rozvrhu */
         .bottom-row {
             flex: 1;
             background-color: var(--panel-bg);
@@ -188,18 +263,39 @@
 <body>
 
     <div class="top-row">
+        <!-- 1. Čas -->
         <div class="panel panel-time">
             <div id="clock">00:00</div>
         </div>
+
+        <!-- 2. Dátum -->
         <div class="panel panel-date">
             <div id="day">DEŇ</div>
             <div id="date">00. MESIAC 0000</div>
         </div>
+
+        <!-- 3. Poznámky -->
         <div class="panel panel-notes">
-            <div class="notes-label">Moje poznámky</div>
+            <div class="panel-label">Poznámky</div>
             <ul class="notes-list" id="notes-container">
                 <li class="note-item" style="opacity: 0.5;">Načítavam...</li>
             </ul>
+        </div>
+
+        <!-- 4. Synology NAS -->
+        <div class="panel panel-nas">
+            <div class="panel-label" style="margin-bottom: 0;">Synology NAS</div>
+            
+            <div class="pie-chart-container">
+                <div class="pie-chart" id="nas-pie">
+                    <div class="pie-chart-inner">
+                        <div class="nas-percent" id="nas-used-text">...</div>
+                        <div class="nas-status-text">použité</div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn-shutdown" onclick="shutdownNAS()">Vypnúť NAS</button>
         </div>
     </div>
 
@@ -209,7 +305,7 @@
     </div>
 
     <script>
-        // === SEM VLOŽ SVOJ KONFIGURAČNÝ OBJEKT Z FIREBASE ===
+        // === FIREBASE CONFIG ===
         const firebaseConfig = {
             apiKey: "AIzaSyBZmGJ715pJkMZJut9aSNfsm04oQH1YeCw",
             authDomain: "dauko-dashboard.firebaseapp.com",
@@ -224,7 +320,7 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // Realtime Počúvanie na zmeny v databáze
+        // 1. LOGIKA PRE POZNÁMKY
         db.ref('notes').on('value', (snapshot) => {
             const container = document.getElementById('notes-container');
             container.innerHTML = '';
@@ -242,6 +338,40 @@
             }
         });
 
+        // 2. LOGIKA PRE NAS GRAF
+        let lastKnownPercent = null;
+        let lastUpdateTime = Date.now();
+
+        db.ref('nas/status/usedPercent').on('value', (snapshot) => {
+            const percent = snapshot.val();
+            if (percent !== null) {
+                lastKnownPercent = percent;
+                lastUpdateTime = Date.now();
+                document.getElementById('nas-used-text').textContent = `${percent}%`;
+                document.getElementById('nas-pie').style.background = `conic-gradient(#00d2ff 0% ${percent}%, rgba(255, 255, 255, 0.08) ${percent}% 100%)`;
+            }
+        });
+
+        // Kontrola, či NAS neumrelo (ak neposlalo dáta viac ako 3 minúty)
+        setInterval(() => {
+            if (Date.now() - lastUpdateTime > 180000) {
+                document.getElementById('nas-used-text').textContent = "OFF";
+                document.getElementById('nas-pie').style.background = `conic-gradient(#ff4757 0% 100%, rgba(255, 255, 255, 0.08) 100% 100%)`;
+            }
+        }, 10000);
+
+        // 3. LOGIKA PRE VYPNUTIE NAS
+        function shutdownNAS() {
+            if (confirm("Naozaj chceš vypnúť Synology NAS? Bude to trvať do 60 sekúnd.")) {
+                db.ref('nas/command').set('shutdown').then(() => {
+                    alert("Príkaz bol odoslaný. Synology sa čoskoro vypne.");
+                }).catch((error) => {
+                    alert("Chyba: Nepodarilo sa odoslať príkaz.");
+                });
+            }
+        }
+
+        // === LOGIKA PRE ROZVRH A ČAS ===
         const scheduleData = {
             1: [ 
                 { p: 1, s: 'SJL', start: '08:00', end: '08:45' },
