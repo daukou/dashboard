@@ -1,10 +1,11 @@
 import json
+import os
 import time
 import traceback
 from datetime import datetime, timedelta
 from edupage_api import Edupage
 
-# === NASTAVENIA ===
+# Namiesto hesla v kóde načítame z prostredia alebo použi svoje údaje
 EDUPAGE_SUBDOMAIN = "spseke"  # iba časť pred .edupage.org (napr. spseke)
 USERNAME = "DavidLukac48"
 PASSWORD = "Davidko369*"
@@ -12,13 +13,10 @@ TARGET_CLASS = "III.A"  # Tvoja trieda tak, ako sa zobrazuje na EduPage
 
 def main():
     edupage = Edupage()
-    
-    # Pridáme User-Agent, aby sa skript netváril ako bot
     edupage.session.headers.update({
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
     })
 
-    # Pokus o prihlásenie s opakovním pri výpadku siete (max 3 pokusy)
     logged_in = False
     for attempt in range(1, 4):
         try:
@@ -29,12 +27,12 @@ def main():
             break
         except Exception as e:
             print(f"Pokus {attempt} zlyhal: {e}")
-            time.sleep(5) # Počkám 5 sekúnd pred ďalším pokusom
+            time.sleep(10)
 
     if not logged_in:
-        raise ConnectionError("Nepodarilo sa nadviazať spojenie s EduPage serverom.")
+        print("Pripojenie zlyhalo. Ponechávam predchádzajúci súbor suplovanie.json bez prepísania.")
+        return
 
-    # Určenie dátumu (po 15:00 berieme nasledujúci deň)
     now = datetime.now()
     target_date = now.date()
     if now.hour >= 15:
@@ -47,8 +45,6 @@ def main():
     if changes_data:
         for item in changes_data:
             item_str = str(item)
-            
-            # Filtrovanie pre triedu III.A
             if not TARGET_CLASS or TARGET_CLASS in item_str or "všetky" in item_str.lower():
                 period = getattr(item, 'period', '?')
                 subject = getattr(item, 'subject', 'Zmena')
@@ -83,11 +79,3 @@ if __name__ == "__main__":
         main()
     except Exception as e:
         print(f"Chyba: {e}")
-        error_data = {
-            "has_changes": False,
-            "error": str(e),
-            "traceback": traceback.format_exc(),
-            "changes": []
-        }
-        with open("suplovanie.json", "w", encoding="utf-8") as f:
-            json.dump(error_data, f, ensure_ascii=False, indent=2)
