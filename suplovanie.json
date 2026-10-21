@@ -1,6 +1,18 @@
 {
-  "has_changes": false,
-  "error": "Nepodarilo sa nadviazať spojenie s EduPage serverom.",
-  "traceback": "Traceback (most recent call last):\n  File \"/home/runner/work/dashboard/dashboard/fetch_edupage.py\", line 83, in <module>\n    main()\n    ~~~~^^\n  File \"/home/runner/work/dashboard/dashboard/fetch_edupage.py\", line 35, in main\n    raise ConnectionError(\"Nepodarilo sa nadviazať spojenie s EduPage serverom.\")\nConnectionError: Nepodarilo sa nadviazať spojenie s EduPage serverom.\n",
-  "changes": []
+  "has_changes": true,
+  "date": "21.10.2026",
+  "changes": [
+    {
+      "period": "?",
+      "subject": "Zmena",
+      "room": "",
+      "note": "TimetableChange(change_class='III.A', lesson_n=3, title='2. sk: TEM - Suplovanie: (Ingrid Kolembusová) ➔ Miroslav Máthé, Zameniť učebňu: (77) ➔ 28A', action=<Action.CHANGE: 'change'>)"
+    },
+    {
+      "period": "?",
+      "subject": "Zmena",
+      "room": "",
+      "note": "TimetableChange(change_class='III.A', lesson_n=4, title='2. sk: TEM - Suplovanie: (Ingrid Kolembusová) ➔ Peter Zambori, Zameniť učebňu: (77) ➔ 28A', action=<Action.CHANGE: 'change'>)"
+    }
+  ]
 }
