@@ -1,18 +1,5 @@
 {
-  "has_changes": true,
-  "date": "21.10.2026",
-  "changes": [
-    {
-      "period": "?",
-      "subject": "Zmena",
-      "room": "",
-      "note": "TimetableChange(change_class='III.A', lesson_n=3, title='2. sk: TEM - Suplovanie: (Ingrid Kolembusová) ➔ Miroslav Máthé, Zameniť učebňu: (77) ➔ 28A', action=<Action.CHANGE: 'change'>)"
-    },
-    {
-      "period": "?",
-      "subject": "Zmena",
-      "room": "",
-      "note": "TimetableChange(change_class='III.A', lesson_n=4, title='2. sk: TEM - Suplovanie: (Ingrid Kolembusová) ➔ Peter Zambori, Zameniť učebňu: (77) ➔ 28A', action=<Action.CHANGE: 'change'>)"
-    }
-  ]
+  "has_changes": false,
+  "date": "24.10.2026",
+  "changes": []
 }
