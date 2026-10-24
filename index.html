@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dauko Dashboard</title>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
     
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -12,13 +11,14 @@
 
     <style>
         :root {
-            --bg-color: #0f111a;
-            --panel-bg: #1c2033;
-            --text-main: #ffffff;
-            --text-muted: #8a92b2;
-            --accent-gradient: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
-            --danger-gradient: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
-            --warning-gradient: linear-gradient(135deg, #f7b731 0%, #ffa801 100%);
+            --bg-color: #000000;
+            --panel-bg: rgba(28, 28, 30, 0.7);
+            --panel-border: rgba(255, 255, 255, 0.1);
+            --text-main: #f5f5f7;
+            --text-muted: #86868b;
+            --accent-color: #0a84ff;
+            --danger-color: #ff453a;
+            --radius: 24px;
         }
 
         * {
@@ -29,80 +29,95 @@
 
         body {
             background-color: var(--bg-color);
+            /* Jemný gradient na pozadí pre lepší Apple glassmorphism efekt */
+            background-image: radial-gradient(circle at 15% 50%, rgba(20, 20, 25, 1), #000000 50%);
             color: var(--text-main);
-            font-family: 'Montserrat', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             height: 100vh;
             display: flex;
-            flex-direction: column;
-            padding: 12px;
-            gap: 12px;
+            padding: 20px;
+            gap: 20px;
             overflow: hidden;
         }
 
-        .top-row {
+        /* 3/4 Šírky pre hlavný obsah */
+        .main-content {
+            flex: 3;
             display: flex;
-            height: 42%;
-            gap: 12px;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* 1/4 Šírky pre rozvrh */
+        .sidebar {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .top-widgets {
+            display: flex;
+            gap: 20px;
+            height: 35%;
         }
 
         .panel {
-            background-color: var(--panel-bg);
-            border-radius: 16px;
+            background: var(--panel-bg);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--panel-border);
+            border-radius: var(--radius);
+            padding: 24px;
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-            position: relative;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
         }
 
-        .panel-time { flex: 1; }
-        .panel-date { flex: 1; }
-        .panel-notes { 
-            flex: 1.2;
-            align-items: flex-start;
-            padding: 20px;
-            justify-content: flex-start;
-            overflow: hidden;
-        }
+        /* Špecifické panely */
+        .panel-time { flex: 1.2; justify-content: center; align-items: center; }
+        .panel-date { flex: 1; justify-content: center; align-items: center; }
+        .panel-nas { flex: 1; justify-content: space-between; align-items: center; }
         
-        .panel-nas {
+        .panel-notes {
             flex: 1;
-            padding: 20px;
-            justify-content: space-between;
-            align-items: center;
+            justify-content: flex-start;
         }
 
+        .panel-schedule {
+            flex: 1;
+            justify-content: flex-start;
+        }
+
+        .panel-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            width: 100%;
+            text-align: left;
+            margin-bottom: 16px;
+        }
+
+        /* Typografia */
         #clock {
-            font-size: 6rem;
-            font-weight: 800;
-            letter-spacing: 2px;
+            font-size: 5.5rem;
+            font-weight: 700;
+            letter-spacing: -2px;
+            line-height: 1;
         }
 
         #day {
-            font-size: 2.5rem;
-            font-weight: 800;
-            letter-spacing: 4px;
-            white-space: nowrap;
-            margin-bottom: 8px;
-            text-transform: uppercase;
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
         }
 
         #date {
             font-size: 1.1rem;
-            font-weight: 600;
+            font-weight: 500;
             color: var(--text-muted);
-        }
-
-        .panel-label {
-            font-size: 0.9rem;
-            font-weight: 700;
-            color: var(--text-muted);
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            width: 100%;
-            text-align: left;
-            margin-bottom: 10px;
         }
 
         /* Poznámky */
@@ -111,26 +126,44 @@
             width: 100%;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 12px;
             overflow-y: auto;
-            max-height: 80%;
+            max-height: 100%;
+            padding-right: 10px;
+        }
+
+        /* Skrytie scrollbaru pre čistý Apple vzhľad */
+        .notes-list::-webkit-scrollbar, .schedule-list::-webkit-scrollbar {
+            display: none;
         }
 
         .note-item {
-            font-size: 0.95rem;
-            font-weight: 600;
-            background-color: rgba(255, 255, 255, 0.03);
-            padding: 10px 12px;
-            border-radius: 8px;
-            border-left: 4px solid #00d2ff;
-            word-break: break-word;
+            font-size: 1.1rem;
+            font-weight: 400;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 16px;
+            border-radius: 16px;
+            line-height: 1.4;
+            display: flex;
+            align-items: center;
+        }
+
+        .note-item::before {
+            content: '';
+            display: block;
+            width: 6px;
+            height: 6px;
+            background-color: var(--accent-color);
+            border-radius: 50%;
+            margin-right: 12px;
+            flex-shrink: 0;
         }
 
         /* NAS Kruhový Graf */
         .pie-chart-container {
             position: relative;
-            width: 100px;
-            height: 100px;
+            width: 90px;
+            height: 90px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -140,7 +173,7 @@
             width: 100%;
             height: 100%;
             border-radius: 50%;
-            background: conic-gradient(rgba(255, 255, 255, 0.08) 0% 100%);
+            background: conic-gradient(rgba(255, 255, 255, 0.1) 0% 100%);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -150,7 +183,7 @@
         .pie-chart-inner {
             width: 75%;
             height: 75%;
-            background-color: var(--panel-bg);
+            background-color: #1c1c1e;
             border-radius: 50%;
             display: flex;
             flex-direction: column;
@@ -160,186 +193,128 @@
 
         .nas-percent {
             font-size: 1.2rem;
-            font-weight: 800;
-        }
-
-        .nas-status-text {
-            font-size: 0.65rem;
-            color: var(--text-muted);
             font-weight: 600;
         }
 
         .btn-shutdown {
-            background: var(--danger-gradient);
+            background: rgba(255, 69, 58, 0.15);
+            color: var(--danger-color);
             border: none;
-            color: white;
             padding: 10px 16px;
-            border-radius: 8px;
-            font-weight: 700;
-            font-size: 0.8rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.85rem;
             cursor: pointer;
-            box-shadow: 0 4px 15px rgba(255, 75, 43, 0.3);
             transition: all 0.2s ease;
             width: 100%;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-top: 10px;
+            margin-top: 15px;
         }
 
-        /* Banner pre Suplovanie */
-        #substitution-banner {
-            display: none;
-            background: rgba(255, 65, 108, 0.15);
-            border: 1px solid #ff416c;
-            border-radius: 12px;
-            padding: 10px 16px;
-            font-size: 0.9rem;
+        .btn-shutdown:active {
+            background: var(--danger-color);
             color: #fff;
-            box-shadow: 0 4px 15px rgba(255, 65, 108, 0.2);
         }
 
-        /* Spodný riadok rozvrhu */
-        .bottom-row {
-            flex: 1;
-            background-color: var(--panel-bg);
-            border-radius: 16px;
-            padding: 20px;
+        /* Vertikálny rozvrh */
+        .schedule-list {
             display: flex;
             flex-direction: column;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-            overflow: hidden;
-        }
-
-        #schedule-label {
-            font-size: 1rem;
-            font-weight: 700;
-            color: var(--text-muted);
-            letter-spacing: 2px;
-            margin-bottom: 15px;
-            text-transform: uppercase;
-        }
-
-        #schedule {
-            display: flex;
+            gap: 10px;
+            overflow-y: auto;
             flex: 1;
-            gap: 12px;
         }
 
         .tile {
-            flex: 1;
-            background-color: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 16px;
+            padding: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .tile-left {
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 8px;
-            text-align: center;
-            transition: all 0.3s ease;
-            position: relative;
+            gap: 4px;
         }
 
         .tile-period {
             font-size: 0.75rem;
-            font-weight: 700;
-            color: rgba(255, 255, 255, 0.4);
-            margin-bottom: 4px;
-            letter-spacing: 1px;
+            font-weight: 600;
+            color: var(--text-muted);
             text-transform: uppercase;
         }
 
         .tile-subject {
-            font-size: 2.2rem;
-            font-weight: 800;
-            margin-bottom: 4px;
+            font-size: 1.4rem;
+            font-weight: 700;
         }
 
         .tile-time {
-            font-size: 0.85rem;
-            font-weight: 600;
+            font-size: 0.9rem;
+            font-weight: 500;
             color: var(--text-muted);
-        }
-
-        .tile-sub-info {
-            font-size: 0.65rem;
-            font-weight: 700;
-            color: #ff416c;
-            margin-top: 4px;
-            line-height: 1.1;
         }
 
         /* Aktívna prebiehajúca hodina */
         .tile.active {
-            background: var(--accent-gradient);
-            border: none;
+            background: var(--accent-color);
             color: #ffffff;
-            box-shadow: 0 0 25px rgba(0, 210, 255, 0.4);
-            transform: scale(1.02);
+            box-shadow: 0 8px 24px rgba(10, 132, 255, 0.3);
         }
 
-        .tile.active .tile-period { color: rgba(255, 255, 255, 0.8); }
-        .tile.active .tile-time { color: rgba(255, 255, 255, 0.9); }
-
-        /* Zmenená/suplovaná hodina */
-        .tile.substituted {
-            border: 2px solid #ff416c;
-            background: rgba(255, 65, 108, 0.1);
-        }
-        .tile.substituted .tile-subject {
-            color: #ff416c;
+        .tile.active .tile-period, .tile.active .tile-time {
+            color: rgba(255, 255, 255, 0.8);
         }
     </style>
 </head>
 <body>
 
-    <div class="top-row">
-        <!-- 1. Čas -->
-        <div class="panel panel-time">
-            <div id="clock">00:00</div>
+    <!-- 3/4 Hlavný obsah -->
+    <div class="main-content">
+        <div class="top-widgets">
+            <!-- 1. Čas -->
+            <div class="panel panel-time">
+                <div id="clock">00:00</div>
+            </div>
+
+            <!-- 2. Dátum -->
+            <div class="panel panel-date">
+                <div id="day">DEŇ</div>
+                <div id="date">00. MESIAC 0000</div>
+            </div>
+
+            <!-- 3. NAS -->
+            <div class="panel panel-nas">
+                <div class="panel-label">Synology NAS</div>
+                <div class="pie-chart-container">
+                    <div class="pie-chart" id="nas-pie">
+                        <div class="pie-chart-inner">
+                            <div class="nas-percent" id="nas-used-text">--%</div>
+                        </div>
+                    </div>
+                </div>
+                <button class="btn-shutdown" onclick="shutdownNAS()">Vypnúť</button>
+            </div>
         </div>
 
-        <!-- 2. Dátum -->
-        <div class="panel panel-date">
-            <div id="day">DEŇ</div>
-            <div id="date">00. MESIAC 0000</div>
-        </div>
-
-        <!-- 3. Poznámky -->
+        <!-- 4. Poznámky -->
         <div class="panel panel-notes">
             <div class="panel-label">Poznámky</div>
             <ul class="notes-list" id="notes-container">
-                <li class="note-item" style="opacity: 0.5;">Načítavam...</li>
+                <li class="note-item" style="color: var(--text-muted);">Načítavam...</li>
             </ul>
         </div>
+    </div>
 
-        <!-- 4. Synology NAS -->
-        <div class="panel panel-nas">
-            <div class="panel-label" style="margin-bottom: 0;">Synology NAS</div>
-            
-            <div class="pie-chart-container">
-                <div class="pie-chart" id="nas-pie">
-                    <div class="pie-chart-inner">
-                        <div class="nas-percent" id="nas-used-text">...</div>
-                        <div class="nas-status-text">použité</div>
-                    </div>
-                </div>
-            </div>
-
-            <button class="btn-shutdown" onclick="shutdownNAS()">Vypnúť NAS</button>
+    <!-- 1/4 Bočný panel s rozvrhom -->
+    <div class="sidebar">
+        <div class="panel panel-schedule">
+            <div class="panel-label" id="schedule-label">DNEŠNÝ ROZVRH</div>
+            <div class="schedule-list" id="schedule"></div>
         </div>
-    </div>
-
-    <!-- Banner pre EduPage suplovanie -->
-    <div id="substitution-banner">
-        <strong style="color: #ff416c;">⚠️ ZMENA ROZVRHU:</strong>
-        <span id="substitution-text"></span>
-    </div>
-
-    <!-- Spodný riadok pre rozvrh -->
-    <div class="bottom-row">
-        <div id="schedule-label">DNEŠNÝ ROZVRH</div>
-        <div id="schedule"></div>
     </div>
 
     <script>
@@ -351,8 +326,7 @@
             projectId: "dauko-dashboard",
             storageBucket: "dauko-dashboard.firebasestorage.app",
             messagingSenderId: "112349370791",
-            appId: "1:112349370791:web:d9ab50d25ecd89bc55be82",
-            measurementId: "G-MZRFBJ25SZ"
+            appId: "1:112349370791:web:d9ab50d25ecd89bc55be82"
         };
 
         firebase.initializeApp(firebaseConfig);
@@ -372,70 +346,28 @@
                     container.appendChild(li);
                 });
             } else {
-                container.innerHTML = '<li class="note-item" style="opacity: 0.4;">Žiadne poznámky</li>';
+                container.innerHTML = '<li class="note-item" style="color: var(--text-muted);">Žiadne poznámky</li>';
             }
         });
 
-        // 2. NAS GRAF
-        let lastKnownPercent = null;
-        let lastUpdateTime = Date.now();
-
+        // 2. NAS GRAF (Trvalý poslucháč, odstránený časovač odpájania)
         db.ref('nas/status/usedPercent').on('value', (snapshot) => {
             const percent = snapshot.val();
             if (percent !== null) {
-                lastKnownPercent = percent;
-                lastUpdateTime = Date.now();
                 document.getElementById('nas-used-text').textContent = `${percent}%`;
-                document.getElementById('nas-pie').style.background = `conic-gradient(#00d2ff 0% ${percent}%, rgba(255, 255, 255, 0.08) ${percent}% 100%)`;
+                document.getElementById('nas-pie').style.background = `conic-gradient(var(--accent-color) 0% ${percent}%, rgba(255, 255, 255, 0.08) ${percent}% 100%)`;
             }
         });
 
-        setInterval(() => {
-            if (Date.now() - lastUpdateTime > 180000) {
-                document.getElementById('nas-used-text').textContent = "OFF";
-                document.getElementById('nas-pie').style.background = `conic-gradient(#ff4757 0% 100%, rgba(255, 255, 255, 0.08) 100% 100%)`;
-            }
-        }, 10000);
-
         // 3. SHUTDOWN NAS
         function shutdownNAS() {
-            if (confirm("Naozaj chceš vypnúť Synology NAS? Bude to trvať do 60 sekúnd.")) {
+            if (confirm("Naozaj chceš vypnúť Synology NAS?")) {
                 db.ref('nas/command').set('shutdown').then(() => {
-                    alert("Príkaz bol odoslaný. Synology sa čoskoro vypne.");
-                }).catch((error) => {
+                    alert("Príkaz bol odoslaný.");
+                }).catch(() => {
                     alert("Chyba: Nepodarilo sa odoslať príkaz.");
                 });
             }
-        }
-
-        // Globálna premenná pre zmeny
-        let currentSubstitutions = [];
-
-        // 4. LOGIKA PRE EDUPAGE SUPLOVANIE
-        function checkSubstitution() {
-            fetch('suplovanie.json?t=' + Date.now())
-                .then(response => {
-                    if (!response.ok) throw new Error('Súbor zatiaľ neexistuje');
-                    return response.json();
-                })
-                .then(data => {
-                    if (data && data.has_changes && data.changes.length > 0) {
-                        currentSubstitutions = data.changes;
-                        const banner = document.getElementById('substitution-banner');
-                        const textContainer = document.getElementById('substitution-text');
-                        
-                        let text = data.changes.map(c => `${c.period}. hodina: ${c.info}`).join(' | ');
-                        textContainer.textContent = text;
-                        banner.style.display = 'block';
-                    } else {
-                        currentSubstitutions = [];
-                        document.getElementById('substitution-banner').style.display = 'none';
-                    }
-                    updateDashboard(); // Prekresliť rozvrh so suplovaním
-                })
-                .catch(err => {
-                    console.log("Suplovanie:", err.message);
-                });
         }
 
         // === LOGIKA PRE ROZVRH A ČAS ===
@@ -491,8 +423,6 @@
             return h * 60 + m;
         }
 
-        let lastRenderedMinute = -1;
-
         function updateDashboard() {
             const now = new Date();
             const currentHours = now.getHours();
@@ -507,8 +437,7 @@
             const daysArr = ['Nedeľa', 'Pondelok', 'Utorok', 'Streda', 'Štvrtok', 'Piatok', 'Sobota'];
             const monthsArr = ['január', 'február', 'marec', 'apríl', 'máj', 'jún', 'júl', 'august', 'september', 'október', 'november', 'december'];
             
-            let dayText = daysArr[currentDay].split('').join(' ');
-            document.getElementById('day').textContent = dayText;
+            document.getElementById('day').textContent = daysArr[currentDay];
             document.getElementById('date').textContent = `${now.getDate()}. ${monthsArr[now.getMonth()]} ${now.getFullYear()}`;
 
             let displayDay = currentDay;
@@ -535,8 +464,8 @@
                 }
             }
 
-            const scheduleContainer = document.getElementById('schedule');
             document.getElementById('schedule-label').textContent = label;
+            const scheduleContainer = document.getElementById('schedule');
             scheduleContainer.innerHTML = ''; 
 
             const classesToDisplay = scheduleData[displayDay];
@@ -546,18 +475,14 @@
                     const tile = document.createElement('div');
                     tile.className = 'tile';
 
-                    // Kontrola, či na túto hodinu existuje suplovanie
-                    const subMatch = currentSubstitutions.find(s => s.period === item.p);
-
-                    if (subMatch) {
-                        tile.classList.add('substituted');
-                    }
-
                     if (!isDayOver && displayDay === currentDay) {
                         if (currentTotalMinutes >= timeToMinutes(item.start) && currentTotalMinutes <= timeToMinutes(item.end)) {
                             tile.classList.add('active'); 
                         }
                     }
+
+                    const leftDiv = document.createElement('div');
+                    leftDiv.className = 'tile-left';
 
                     const periodDiv = document.createElement('div');
                     periodDiv.className = 'tile-period';
@@ -567,32 +492,20 @@
                     subjectDiv.className = 'tile-subject';
                     subjectDiv.textContent = item.s;
 
-                    const timeDiv = document.createElement('div');
-                    timeDiv.className = 'tile-time';
-                    timeDiv.textContent = `${item.start} - ${item.end}`;
+                    leftDiv.appendChild(periodDiv);
+                    leftDiv.appendChild(subjectDiv);
 
-                    tile.appendChild(periodDiv);
-                    tile.appendChild(subjectDiv);
-                    tile.appendChild(timeDiv);
+                    const rightDiv = document.createElement('div');
+                    rightDiv.className = 'tile-time';
+                    rightDiv.textContent = `${item.start} - ${item.end}`;
 
-                    if (subMatch) {
-                        const subInfoDiv = document.createElement('div');
-                        subInfoDiv.className = 'tile-sub-info';
-                        
-                        // Zjednodušený výpis zmeny (napr. Učebňa 28A)
-                        let roomMatch = subMatch.info.match(/➔\s*([0-9A-Z]+)/);
-                        let roomText = roomMatch ? ` (učeňba ${roomMatch[1]})` : '';
-                        subInfoDiv.textContent = `ZMENA${roomText}`;
-                        tile.appendChild(subInfoDiv);
-                    }
+                    tile.appendChild(leftDiv);
+                    tile.appendChild(rightDiv);
 
                     scheduleContainer.appendChild(tile);
                 });
             }
         }
-
-        checkSubstitution();
-        setInterval(checkSubstitution, 300000); // Obnoviť suplovanie každých 5 minút
 
         updateDashboard();
         setInterval(updateDashboard, 1000);
