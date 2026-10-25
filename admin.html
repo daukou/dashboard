@@ -3,11 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dauko Dashboard</title>
+    <title>Admin - Poznámky</title>
     
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    
+    <!-- SortableJS pre plynulé ťahanie -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 
     <style>
         :root {
@@ -18,361 +21,122 @@
             --text-muted: #86868b;
             --accent-color: #0a84ff;
             --danger-color: #ff453a;
-            --radius: 28px;
+            --radius: 20px;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
             background-color: var(--bg-color);
-            background-image: radial-gradient(circle at 15% 50%, rgba(25, 25, 32, 1), #000000 60%);
             color: var(--text-main);
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+            padding: 40px;
             display: flex;
-            padding: 20px;
-            gap: 20px;
-            overflow: hidden;
+            justify-content: center;
         }
 
-        /* 3/4 Šírky pre hlavný obsah */
-        .main-content {
-            flex: 3;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        /* 1/4 Šírky pre rozvrh */
-        .sidebar {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* HORNA 1/2 HLAVNEHO OBSAHU */
-        .top-widgets {
-            display: flex;
-            gap: 20px;
-            flex: 1; 
-        }
-
-        /* SPODNA 1/2 HLAVNEHO OBSAHU */
-        .panel-notes {
-            flex: 1; 
-            display: flex;
-            flex-direction: column;
-        }
-
-        .panel {
+        .admin-panel {
             background: var(--panel-bg);
             backdrop-filter: blur(25px);
             -webkit-backdrop-filter: blur(25px);
             border: 1px solid var(--panel-border);
             border-radius: var(--radius);
-            padding: 24px;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-        }
-
-        /* Špecifické vlastnosti widgetov */
-        .panel-time { flex: 1.2; justify-content: center; align-items: center; }
-        .panel-date { flex: 1; justify-content: center; align-items: center; }
-        .panel-nas { flex: 1; justify-content: space-between; align-items: center; }
-
-        .panel-schedule {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .panel-label {
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            letter-spacing: 1px;
-            text-transform: uppercase;
+            padding: 30px;
             width: 100%;
-            text-align: left;
-            margin-bottom: 16px;
+            max-width: 800px;
         }
 
-        /* --- ČAS A BLIKAJÚCA DVOJBODKA --- */
-        #clock-container {
-            font-size: 7.5rem;
-            font-weight: 700;
-            letter-spacing: -3px;
-            line-height: 1;
+        h2 { margin-bottom: 20px; }
+
+        .add-note-container {
             display: flex;
-            align-items: center;
+            gap: 10px;
+            margin-bottom: 30px;
         }
 
-        @keyframes blink-colon {
-            0%, 49% { opacity: 1; }
-            50%, 100% { opacity: 0; }
-        }
-
-        .blink {
-            animation: blink-colon 2s infinite;
-            margin: 0 -5px;
-        }
-
-        /* --- APPLE KALENDÁR WIDGET --- */
-        .calendar-icon {
-            width: 160px;
-            height: 160px;
-            background-color: #1c1c1e;
-            border-radius: 28px;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .cal-top {
-            background-color: #ff3b30;
-            color: white;
-            text-align: center;
-            font-weight: 700;
-            font-size: 1.1rem;
-            padding: 8px 0;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-        }
-
-        .cal-middle {
+        input[type="text"] {
             flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 5.5rem;
-            font-weight: 700;
-            color: white;
-            letter-spacing: -3px;
-            line-height: 1;
-            margin-top: 5px;
-        }
-
-        .cal-bottom {
-            text-align: center;
-            padding-bottom: 12px;
-            font-size: 1.1rem;
-            font-weight: 500;
-            color: #98989d;
-        }
-
-        /* --- POZNÁMKY --- */
-        .notes-list {
-            list-style: none;
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            overflow-y: auto;
-            flex: 1;
-            padding-right: 10px;
-        }
-
-        .notes-list::-webkit-scrollbar, .schedule-list::-webkit-scrollbar {
-            display: none;
-        }
-
-        .note-item {
-            font-size: 1.2rem;
-            font-weight: 400;
-            background: rgba(255, 255, 255, 0.04);
-            padding: 18px 20px;
-            border-radius: 20px;
-            line-height: 1.4;
-            display: flex;
-            align-items: center;
-        }
-
-        .note-item::before {
-            content: '';
-            display: block;
-            width: 8px;
-            height: 8px;
-            background-color: var(--accent-color);
-            border-radius: 50%;
-            margin-right: 16px;
-            flex-shrink: 0;
-        }
-
-        /* --- SYNOLOGY NAS --- */
-        .pie-chart-container {
-            position: relative;
-            width: 125px;
-            height: 125px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-top: 10px;
-        }
-
-        .pie-chart {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            background: conic-gradient(rgba(255, 255, 255, 0.08) 0% 100%);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            transition: background 0.5s ease;
-        }
-
-        .pie-chart-inner {
-            width: 76%;
-            height: 76%;
-            background-color: #1a1a1c;
-            border-radius: 50%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .nas-percent {
-            font-size: 1.6rem;
-            font-weight: 700;
-        }
-
-        .btn-shutdown {
-            background: rgba(255, 69, 58, 0.15);
-            color: var(--danger-color);
-            border: none;
             padding: 12px 16px;
             border-radius: 12px;
+            border: 1px solid var(--panel-border);
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            font-size: 1.1rem;
+        }
+
+        button {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-size: 1rem;
             font-weight: 600;
-            font-size: 0.95rem;
             cursor: pointer;
-            transition: all 0.2s ease;
-            width: 100%;
-            margin-top: 15px;
+            transition: opacity 0.2s;
         }
 
-        .btn-shutdown:active {
-            background: var(--danger-color);
-            color: #fff;
-        }
+        button:active { opacity: 0.7; }
 
-        /* --- ROZVRH --- */
-        .schedule-list {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            flex: 1; 
-        }
-
-        .tile {
-            flex: 1; 
+        .note-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
             background: rgba(255, 255, 255, 0.04);
-            border-radius: 20px;
-            padding: 0 20px;
-            transition: all 0.3s ease;
-            min-height: 60px;
+            padding: 16px;
+            border-radius: 16px;
+            margin-bottom: 10px;
+            transition: background 0.2s;
         }
 
-        .tile-left {
+        .note-item.sortable-ghost {
+            opacity: 0.4;
+            background: rgba(10, 132, 255, 0.2);
+        }
+
+        .drag-handle {
+            cursor: grab;
+            padding: 0 15px 0 5px;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            user-select: none;
+        }
+
+        .drag-handle:active {
+            cursor: grabbing;
+        }
+
+        .note-text {
+            flex: 1;
+            font-size: 1.1rem;
+            margin-right: 15px;
+        }
+
+        .controls {
             display: flex;
-            flex-direction: column;
-            justify-content: center;
-            gap: 4px;
+            gap: 8px;
         }
 
-        .tile-period {
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            text-transform: uppercase;
-        }
-
-        .tile-subject {
-            font-size: 1.6rem;
-            font-weight: 700;
-        }
-
-        .tile-time {
+        .btn-icon {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 12px;
             font-size: 1rem;
-            font-weight: 500;
-            color: var(--text-muted);
         }
 
-        .tile.active {
-            background: var(--accent-color);
-            color: #ffffff;
-            box-shadow: 0 8px 24px rgba(10, 132, 255, 0.3);
-        }
-
-        .tile.active .tile-period, .tile.active .tile-time {
-            color: rgba(255, 255, 255, 0.8);
-        }
+        .btn-danger { background: rgba(255, 69, 58, 0.2); color: var(--danger-color); }
     </style>
 </head>
 <body>
 
-    <!-- HLAVNÝ OBSAH (3/4 obrazovky) -->
-    <div class="main-content">
+    <div class="admin-panel">
+        <h2>Správa poznámok</h2>
         
-        <!-- Vrchná polovina -->
-        <div class="top-widgets">
-            
-            <!-- Čas s blikajúcou dvojbodkou -->
-            <div class="panel panel-time">
-                <div id="clock-container">
-                    <span id="hr">00</span>
-                    <span class="blink">:</span>
-                    <span id="min">00</span>
-                </div>
-            </div>
-
-            <!-- Apple Kalendár -->
-            <div class="panel panel-date">
-                <div class="calendar-icon">
-                    <div class="cal-top" id="cal-month">MESIAC</div>
-                    <div class="cal-middle" id="cal-day">00</div>
-                    <div class="cal-bottom" id="cal-weekday">Deň</div>
-                </div>
-            </div>
-
-            <!-- NAS -->
-            <div class="panel panel-nas">
-                <div class="panel-label">Synology NAS</div>
-                <div class="pie-chart-container">
-                    <div class="pie-chart" id="nas-pie">
-                        <div class="pie-chart-inner">
-                            <div class="nas-percent" id="nas-used-text">--%</div>
-                        </div>
-                    </div>
-                </div>
-                <button class="btn-shutdown" onclick="shutdownNAS()">Vypnúť</button>
-            </div>
+        <div class="add-note-container">
+            <input type="text" id="new-note" placeholder="Napíš novú poznámku..." onkeypress="if(event.key === 'Enter') addNote()">
+            <button onclick="addNote()">Pridať</button>
         </div>
 
-        <!-- Spodná polovina -->
-        <div class="panel panel-notes">
-            <div class="panel-label">Poznámky</div>
-            <ul class="notes-list" id="notes-container">
-                <li class="note-item" style="color: var(--text-muted);">Načítavam...</li>
-            </ul>
-        </div>
-    </div>
-
-    <!-- ROZVRH (1/4 obrazovky) -->
-    <div class="sidebar">
-        <div class="panel panel-schedule">
-            <div class="panel-label" id="schedule-label">DNEŠNÝ ROZVRH</div>
-            <div class="schedule-list" id="schedule"></div>
-        </div>
+        <div id="notes-list"></div>
     </div>
 
     <script>
@@ -388,197 +152,98 @@
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
+        
+        let sortableInstance = null;
 
-        // Poznámky s logikou na zoraďovanie (order)
+        // Načítanie poznámok bez Firebase indexovania (zoradenie prebehne v JavaScripte)
         db.ref('notes').on('value', (snapshot) => {
-            const container = document.getElementById('notes-container');
+            const container = document.getElementById('notes-list');
             container.innerHTML = '';
             
             let notesArray = [];
 
-            if (snapshot.exists()) {
-                snapshot.forEach((child) => {
-                    const val = child.val();
-                    notesArray.push({
-                        text: val.text || '',
-                        order: val.order !== undefined ? val.order : 999
+            // Naplnenie poľa bezpečne (aj pre staré poznámky bez 'order')
+            snapshot.forEach((child) => {
+                const val = child.val();
+                notesArray.push({
+                    id: child.key,
+                    text: val.text || '',
+                    // Ak stará poznámka nemá order, dáme ju na koniec (999)
+                    order: val.order !== undefined ? val.order : 999 
+                });
+            });
+
+            // Zoradenie podľa order
+            notesArray.sort((a, b) => a.order - b.order);
+
+            // Vykreslenie HTML
+            notesArray.forEach((note) => {
+                const div = document.createElement('div');
+                div.className = 'note-item';
+                div.dataset.id = note.id;
+
+                div.innerHTML = `
+                    <div class="drag-handle">☰</div>
+                    <div class="note-text">${note.text}</div>
+                    <div class="controls">
+                        <button class="btn-icon" onclick="editNote('${note.id}', '${note.text.replace(/'/g, "\\'")}')">✎</button>
+                        <button class="btn-icon btn-danger" onclick="deleteNote('${note.id}')">✖</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+
+            initSortable();
+        });
+
+        function initSortable() {
+            const container = document.getElementById('notes-list');
+            if (sortableInstance) sortableInstance.destroy();
+
+            sortableInstance = new Sortable(container, {
+                handle: '.drag-handle',
+                animation: 250,
+                ghostClass: 'sortable-ghost',
+                onEnd: function () {
+                    const items = Array.from(container.children);
+                    const updates = {};
+                    
+                    items.forEach((item, index) => {
+                        const id = item.dataset.id;
+                        updates[`notes/${id}/order`] = index;
                     });
-                });
-
-                notesArray.sort((a, b) => a.order - b.order);
-
-                notesArray.forEach((note) => {
-                    const li = document.createElement('li');
-                    li.className = 'note-item';
-                    li.textContent = note.text;
-                    container.appendChild(li);
-                });
-            } else {
-                container.innerHTML = '<li class="note-item" style="color: var(--text-muted);">Žiadne poznámky</li>';
-            }
-        });
-
-        // NAS
-        db.ref('nas/status/usedPercent').on('value', (snapshot) => {
-            const percent = snapshot.val();
-            if (percent !== null) {
-                document.getElementById('nas-used-text').textContent = `${percent}%`;
-                document.getElementById('nas-pie').style.background = `conic-gradient(var(--accent-color) 0% ${percent}%, rgba(255, 255, 255, 0.08) ${percent}% 100%)`;
-            }
-        });
-
-        function shutdownNAS() {
-            if (confirm("Naozaj chceš vypnúť Synology NAS?")) {
-                db.ref('nas/command').set('shutdown').then(() => {
-                    alert("Príkaz bol odoslaný.");
-                }).catch(() => {
-                    alert("Chyba: Nepodarilo sa odoslať príkaz.");
-                });
-            }
-        }
-
-        // Rozvrh Data
-        const scheduleData = {
-            1: [ 
-                { p: 1, s: 'SJL', start: '08:00', end: '08:45' },
-                { p: 2, s: 'MAT', start: '08:50', end: '09:35' },
-                { p: 3, s: 'INP', start: '09:45', end: '10:30' },
-                { p: 4, s: 'ANJ', start: '10:50', end: '11:35' },
-                { p: 5, s: 'LIN', start: '11:40', end: '12:25' },
-                { p: 6, s: 'PBE', start: '12:35', end: '13:20' },
-                { p: 7, s: 'PBE', start: '13:30', end: '14:15' }
-            ],
-            2: [ 
-                { p: 1, s: 'OBP', start: '08:00', end: '08:45' },
-                { p: 2, s: 'OBP', start: '08:50', end: '09:35' },
-                { p: 3, s: 'ANJ', start: '09:45', end: '10:30' },
-                { p: 4, s: 'SJL', start: '10:50', end: '11:35' },
-                { p: 5, s: 'MAT', start: '11:40', end: '12:25' },
-                { p: 6, s: 'NEJ', start: '12:35', end: '13:20' }
-            ],
-            3: [ 
-                { p: 0, s: 'TSV', start: '07:10', end: '07:55' },
-                { p: 1, s: 'TSV', start: '08:00', end: '08:45' },
-                { p: 2, s: 'INP', start: '08:50', end: '09:35' },
-                { p: 3, s: 'TEM', start: '09:45', end: '10:30' },
-                { p: 4, s: 'TEM', start: '10:50', end: '11:35' },
-                { p: 5, s: 'OBP', start: '11:40', end: '12:25' },
-                { p: 6, s: 'OBP', start: '12:35', end: '13:20' },
-                { p: 7, s: 'TH',  start: '13:30', end: '14:15' }
-            ],
-            4: [ 
-                { p: 1, s: 'DDW', start: '08:00', end: '08:45' },
-                { p: 2, s: 'DDW', start: '08:50', end: '09:35' },
-                { p: 3, s: 'DDW', start: '09:45', end: '10:30' },
-                { p: 4, s: 'SJL', start: '10:50', end: '11:35' },
-                { p: 5, s: 'OBN', start: '11:40', end: '12:25' },
-                { p: 6, s: 'ANJ', start: '12:35', end: '13:20' },
-                { p: 7, s: 'ANJ', start: '13:30', end: '14:15' }
-            ],
-            5: [ 
-                { p: 1, s: 'ODP', start: '08:00', end: '08:45' },
-                { p: 2, s: 'ODP', start: '08:50', end: '09:35' },
-                { p: 3, s: 'NEJ', start: '09:45', end: '10:30' },
-                { p: 4, s: 'NEJ', start: '10:50', end: '11:35' },
-                { p: 5, s: 'LIN', start: '11:40', end: '12:25' },
-                { p: 6, s: 'LIN', start: '12:35', end: '13:20' }
-            ]
-        };
-
-        function timeToMinutes(timeStr) {
-            const [h, m] = timeStr.split(':').map(Number);
-            return h * 60 + m;
-        }
-
-        function updateDashboard() {
-            const now = new Date();
-            const currentHours = now.getHours();
-            const currentMinutes = now.getMinutes();
-            const currentTotalMinutes = currentHours * 60 + currentMinutes;
-            const currentDay = now.getDay();
-            
-            // Render hodín
-            document.getElementById('hr').textContent = currentHours.toString().padStart(2, '0');
-            document.getElementById('min').textContent = currentMinutes.toString().padStart(2, '0');
-
-            // Render kalendára
-            const daysArr = ['Nedeľa', 'Pondelok', 'Utorok', 'Streda', 'Štvrtok', 'Piatok', 'Sobota'];
-            const monthsArr = ['JAN', 'FEB', 'MAR', 'APR', 'MÁJ', 'JÚN', 'JÚL', 'AUG', 'SEP', 'OKT', 'NOV', 'DEC'];
-            
-            document.getElementById('cal-month').textContent = monthsArr[now.getMonth()];
-            document.getElementById('cal-day').textContent = now.getDate();
-            document.getElementById('cal-weekday').textContent = daysArr[currentDay];
-
-            // Render rozvrhu
-            let displayDay = currentDay;
-            let label = "Dnešný rozvrh";
-            let todaysSchedule = scheduleData[currentDay];
-            let isDayOver = false;
-
-            if (todaysSchedule) {
-                const lastClass = todaysSchedule[todaysSchedule.length - 1];
-                if (currentTotalMinutes > timeToMinutes(lastClass.end)) {
-                    isDayOver = true;
+                    
+                    db.ref().update(updates);
                 }
-            } else {
-                isDayOver = true;
-            }
+            });
+        }
 
-            if (isDayOver) {
-                label = "Zajtrajší rozvrh";
-                displayDay = currentDay + 1;
-                
-                if (currentDay === 5 || currentDay === 6 || currentDay === 0) {
-                    displayDay = 1;
-                    label = "Pondelkový rozvrh";
-                }
-            }
+        function addNote() {
+            const input = document.getElementById('new-note');
+            const text = input.value.trim();
+            if (!text) return;
 
-            document.getElementById('schedule-label').textContent = label;
-            const scheduleContainer = document.getElementById('schedule');
-            scheduleContainer.innerHTML = ''; 
+            db.ref('notes').once('value').then(snapshot => {
+                const count = snapshot.numChildren();
+                db.ref('notes').push({ text: text, order: count });
+                input.value = '';
+            }).catch(error => {
+                console.error("Chyba pri pridávaní:", error);
+            });
+        }
 
-            const classesToDisplay = scheduleData[displayDay];
-
-            if (classesToDisplay) {
-                classesToDisplay.forEach(item => {
-                    const tile = document.createElement('div');
-                    tile.className = 'tile';
-
-                    if (!isDayOver && displayDay === currentDay) {
-                        if (currentTotalMinutes >= timeToMinutes(item.start) && currentTotalMinutes <= timeToMinutes(item.end)) {
-                            tile.classList.add('active'); 
-                        }
-                    }
-
-                    const leftDiv = document.createElement('div');
-                    leftDiv.className = 'tile-left';
-
-                    const periodDiv = document.createElement('div');
-                    periodDiv.className = 'tile-period';
-                    periodDiv.textContent = `${item.p}. hodina`;
-
-                    const subjectDiv = document.createElement('div');
-                    subjectDiv.className = 'tile-subject';
-                    subjectDiv.textContent = item.s;
-
-                    leftDiv.appendChild(periodDiv);
-                    leftDiv.appendChild(subjectDiv);
-
-                    const rightDiv = document.createElement('div');
-                    rightDiv.className = 'tile-time';
-                    rightDiv.textContent = `${item.start} - ${item.end}`;
-
-                    tile.appendChild(leftDiv);
-                    tile.appendChild(rightDiv);
-
-                    scheduleContainer.appendChild(tile);
-                });
+        function editNote(id, currentText) {
+            const newText = prompt("Uprav poznámku:", currentText);
+            if (newText && newText.trim() !== "") {
+                db.ref(`notes/${id}`).update({ text: newText.trim() });
             }
         }
 
-        updateDashboard();
-        setInterval(updateDashboard, 1000);
+        function deleteNote(id) {
+            if (confirm("Naozaj chceš zmazať túto poznámku?")) {
+                db.ref(`notes/${id}`).remove();
+            }
+        }
     </script>
 </body>
 </html>
