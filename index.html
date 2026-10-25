@@ -112,7 +112,6 @@
             align-items: center;
         }
 
-        /* Animácia pre dvojbodku: 1s svieti, 1s zhasnutá (celkom 2s cyklus) */
         @keyframes blink-colon {
             0%, 49% { opacity: 1; }
             50%, 100% { opacity: 0; }
@@ -120,7 +119,7 @@
 
         .blink {
             animation: blink-colon 2s infinite;
-            margin: 0 -5px; /* jemné posunutie pre lepší vizuál */
+            margin: 0 -5px;
         }
 
         /* --- APPLE KALENDÁR WIDGET --- */
@@ -128,7 +127,7 @@
             width: 160px;
             height: 160px;
             background-color: #1c1c1e;
-            border-radius: 28px; /* Tzv. squircle zaoblenie */
+            border-radius: 28px;
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -137,7 +136,7 @@
         }
 
         .cal-top {
-            background-color: #ff3b30; /* Apple Red */
+            background-color: #ff3b30;
             color: white;
             text-align: center;
             font-weight: 700;
@@ -390,17 +389,28 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // Poznámky
+        // Poznámky s logikou na zoraďovanie (order)
         db.ref('notes').on('value', (snapshot) => {
             const container = document.getElementById('notes-container');
             container.innerHTML = '';
-            const data = snapshot.val();
             
-            if (data) {
-                Object.keys(data).forEach(key => {
+            let notesArray = [];
+
+            if (snapshot.exists()) {
+                snapshot.forEach((child) => {
+                    const val = child.val();
+                    notesArray.push({
+                        text: val.text || '',
+                        order: val.order !== undefined ? val.order : 999
+                    });
+                });
+
+                notesArray.sort((a, b) => a.order - b.order);
+
+                notesArray.forEach((note) => {
                     const li = document.createElement('li');
                     li.className = 'note-item';
-                    li.textContent = data[key].text;
+                    li.textContent = note.text;
                     container.appendChild(li);
                 });
             } else {
