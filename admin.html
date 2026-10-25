@@ -3,14 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Poznámky</title>
+    <title>Dauko Dashboard</title>
     
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
-    
-    <!-- SortableJS pre plynulé ťahanie -->
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 
     <style>
         :root {
@@ -21,229 +18,180 @@
             --text-muted: #86868b;
             --accent-color: #0a84ff;
             --danger-color: #ff453a;
-            --radius: 20px;
+            --radius: 28px;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
         body {
             background-color: var(--bg-color);
+            background-image: radial-gradient(circle at 15% 50%, rgba(25, 25, 32, 1), #000000 60%);
             color: var(--text-main);
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
-            padding: 40px;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            height: 100vh;
             display: flex;
-            justify-content: center;
+            padding: 20px;
+            gap: 20px;
+            overflow: hidden;
         }
 
-        .admin-panel {
+        /* 3/4 Šírky pre hlavný obsah */
+        .main-content {
+            flex: 3;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* 1/4 Šírky pre rozvrh */
+        .sidebar {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* HORNA 1/2 HLAVNEHO OBSAHU */
+        .top-widgets {
+            display: flex;
+            gap: 20px;
+            flex: 1; 
+        }
+
+        /* SPODNA 1/2 HLAVNEHO OBSAHU */
+        .panel-notes {
+            flex: 1; 
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel {
             background: var(--panel-bg);
             backdrop-filter: blur(25px);
             -webkit-backdrop-filter: blur(25px);
             border: 1px solid var(--panel-border);
             border-radius: var(--radius);
-            padding: 30px;
-            width: 100%;
-            max-width: 800px;
-        }
-
-        h2 { margin-bottom: 20px; }
-
-        .add-note-container {
+            padding: 24px;
             display: flex;
-            gap: 10px;
-            margin-bottom: 30px;
+            flex-direction: column;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
         }
 
-        input[type="text"] {
+        /* Špecifické vlastnosti widgetov */
+        .panel-time { flex: 1.2; justify-content: center; align-items: center; }
+        .panel-date { flex: 1; justify-content: center; align-items: center; }
+        .panel-nas { flex: 1; justify-content: space-between; align-items: center; }
+
+        .panel-schedule {
             flex: 1;
-            padding: 12px 16px;
-            border-radius: 12px;
-            border: 1px solid var(--panel-border);
-            background: rgba(255, 255, 255, 0.05);
-            color: white;
-            font-size: 1.1rem;
+            display: flex;
+            flex-direction: column;
         }
 
-        button {
-            background: var(--accent-color);
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 12px;
-            font-size: 1rem;
+        .panel-label {
+            font-size: 0.8rem;
             font-weight: 600;
-            cursor: pointer;
-            transition: opacity 0.2s;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            width: 100%;
+            text-align: left;
+            margin-bottom: 16px;
         }
 
-        button:active { opacity: 0.7; }
+        /* --- ČAS A BLIKAJÚCA DVOJBODKA --- */
+        #clock-container {
+            font-size: 7.5rem;
+            font-weight: 700;
+            letter-spacing: -3px;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+        }
+
+        @keyframes blink-colon {
+            0%, 49% { opacity: 1; }
+            50%, 100% { opacity: 0; }
+        }
+
+        .blink {
+            animation: blink-colon 2s infinite;
+            margin: 0 -5px;
+        }
+
+        /* --- APPLE KALENDÁR WIDGET --- */
+        .calendar-icon {
+            width: 160px;
+            height: 160px;
+            background-color: #1c1c1e;
+            border-radius: 28px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .cal-top {
+            background-color: #ff3b30;
+            color: white;
+            text-align: center;
+            font-weight: 700;
+            font-size: 1.1rem;
+            padding: 8px 0;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .cal-middle {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 5.5rem;
+            font-weight: 700;
+            color: white;
+            letter-spacing: -3px;
+            line-height: 1;
+            margin-top: 5px;
+        }
+
+        .cal-bottom {
+            text-align: center;
+            padding-bottom: 12px;
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #98989d;
+        }
+
+        /* --- POZNÁMKY --- */
+        .notes-list {
+            list-style: none;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow-y: auto;
+            flex: 1;
+            padding-right: 10px;
+        }
+
+        .notes-list::-webkit-scrollbar, .schedule-list::-webkit-scrollbar {
+            display: none;
+        }
 
         .note-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            font-size: 1.2rem;
+            font-weight: 400;
             background: rgba(255, 255, 255, 0.04);
-            padding: 16px;
-            border-radius: 16px;
-            margin-bottom: 10px;
-            transition: background 0.2s;
-        }
-
-        .note-item.sortable-ghost {
-            opacity: 0.4;
-            background: rgba(10, 132, 255, 0.2);
-        }
-
-        .drag-handle {
-            cursor: grab;
-            padding: 0 15px 0 5px;
-            color: var(--text-muted);
-            font-size: 1.5rem;
-            user-select: none;
-        }
-
-        .drag-handle:active {
-            cursor: grabbing;
-        }
-
-        .note-text {
-            flex: 1;
-            font-size: 1.1rem;
-            margin-right: 15px;
-        }
-
-        .controls {
+            padding: 18px 20px;
+            border-radius: 20px;
+            line-height: 1.4;
             display: flex;
-            gap: 8px;
+            align-items: center;
         }
 
-        .btn-icon {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 8px 12px;
-            font-size: 1rem;
-        }
-
-        .btn-danger { background: rgba(255, 69, 58, 0.2); color: var(--danger-color); }
-    </style>
-</head>
-<body>
-
-    <div class="admin-panel">
-        <h2>Správa poznámok</h2>
-        
-        <div class="add-note-container">
-            <input type="text" id="new-note" placeholder="Napíš novú poznámku..." onkeypress="if(event.key === 'Enter') addNote()">
-            <button onclick="addNote()">Pridať</button>
-        </div>
-
-        <div id="notes-list"></div>
-    </div>
-
-    <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyBZmGJ715pJkMZJut9aSNfsm04oQH1YeCw",
-            authDomain: "dauko-dashboard.firebaseapp.com",
-            databaseURL: "https://dauko-dashboard-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "dauko-dashboard",
-            storageBucket: "dauko-dashboard.firebasestorage.app",
-            messagingSenderId: "112349370791",
-            appId: "1:112349370791:web:d9ab50d25ecd89bc55be82"
-        };
-
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-        
-        let sortableInstance = null;
-
-        // Načítanie poznámok bez Firebase indexovania (zoradenie prebehne v JavaScripte)
-        db.ref('notes').on('value', (snapshot) => {
-            const container = document.getElementById('notes-list');
-            container.innerHTML = '';
-            
-            let notesArray = [];
-
-            // Naplnenie poľa bezpečne (aj pre staré poznámky bez 'order')
-            snapshot.forEach((child) => {
-                const val = child.val();
-                notesArray.push({
-                    id: child.key,
-                    text: val.text || '',
-                    // Ak stará poznámka nemá order, dáme ju na koniec (999)
-                    order: val.order !== undefined ? val.order : 999 
-                });
-            });
-
-            // Zoradenie podľa order
-            notesArray.sort((a, b) => a.order - b.order);
-
-            // Vykreslenie HTML
-            notesArray.forEach((note) => {
-                const div = document.createElement('div');
-                div.className = 'note-item';
-                div.dataset.id = note.id;
-
-                div.innerHTML = `
-                    <div class="drag-handle">☰</div>
-                    <div class="note-text">${note.text}</div>
-                    <div class="controls">
-                        <button class="btn-icon" onclick="editNote('${note.id}', '${note.text.replace(/'/g, "\\'")}')">✎</button>
-                        <button class="btn-icon btn-danger" onclick="deleteNote('${note.id}')">✖</button>
-                    </div>
-                `;
-                container.appendChild(div);
-            });
-
-            initSortable();
-        });
-
-        function initSortable() {
-            const container = document.getElementById('notes-list');
-            if (sortableInstance) sortableInstance.destroy();
-
-            sortableInstance = new Sortable(container, {
-                handle: '.drag-handle',
-                animation: 250,
-                ghostClass: 'sortable-ghost',
-                onEnd: function () {
-                    const items = Array.from(container.children);
-                    const updates = {};
-                    
-                    items.forEach((item, index) => {
-                        const id = item.dataset.id;
-                        updates[`notes/${id}/order`] = index;
-                    });
-                    
-                    db.ref().update(updates);
-                }
-            });
-        }
-
-        function addNote() {
-            const input = document.getElementById('new-note');
-            const text = input.value.trim();
-            if (!text) return;
-
-            db.ref('notes').once('value').then(snapshot => {
-                const count = snapshot.numChildren();
-                db.ref('notes').push({ text: text, order: count });
-                input.value = '';
-            }).catch(error => {
-                console.error("Chyba pri pridávaní:", error);
-            });
-        }
-
-        function editNote(id, currentText) {
-            const newText = prompt("Uprav poznámku:", currentText);
-            if (newText && newText.trim() !== "") {
-                db.ref(`notes/${id}`).update({ text: newText.trim() });
-            }
-        }
-
-        function deleteNote(id) {
-            if (confirm("Naozaj chceš zmazať túto poznámku?")) {
-                db.ref(`notes/${id}`).remove();
-            }
-        }
-    </script>
-</body>
-</html>
+        .note-item::
