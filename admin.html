@@ -8,6 +8,9 @@
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    
+    <!-- SortableJS pre plynulé ťahanie -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 
     <style>
         :root {
@@ -70,7 +73,10 @@
             font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
+            transition: opacity 0.2s;
         }
+
+        button:active { opacity: 0.7; }
 
         .note-item {
             display: flex;
@@ -80,12 +86,31 @@
             padding: 16px;
             border-radius: 16px;
             margin-bottom: 10px;
+            transition: background 0.2s;
+        }
+
+        /* Vizuál pri ťahaní */
+        .note-item.sortable-ghost {
+            opacity: 0.4;
+            background: rgba(10, 132, 255, 0.2);
+        }
+
+        .drag-handle {
+            cursor: grab;
+            padding: 0 15px 0 5px;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            user-select: none;
+        }
+
+        .drag-handle:active {
+            cursor: grabbing;
         }
 
         .note-text {
             flex: 1;
             font-size: 1.1rem;
-            margin: 0 15px;
+            margin-right: 15px;
         }
 
         .controls {
@@ -108,7 +133,7 @@
         <h2>Správa poznámok</h2>
         
         <div class="add-note-container">
-            <input type="text" id="new-note" placeholder="Napíš novú poznámku...">
+            <input type="text" id="new-note" placeholder="Napíš novú poznámku..." onkeypress="if(event.key === 'Enter') addNote()">
             <button onclick="addNote()">Pridať</button>
         </div>
 
@@ -129,43 +154,58 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         
-        let notesData = [];
+        let sortableInstance = null;
 
-        // Načítanie poznámok zoradených podľa parametra 'order'
+        // Načítanie poznámok
         db.ref('notes').orderByChild('order').on('value', (snapshot) => {
-            notesData = [];
-            snapshot.forEach((child) => {
-                notesData.push({ 
-                    id: child.key, 
-                    text: child.val().text, 
-                    order: child.val().order || 0 
-                });
-            });
-            renderNotes();
-        });
-
-        function renderNotes() {
             const container = document.getElementById('notes-list');
             container.innerHTML = '';
+            let count = 0;
 
-            notesData.forEach((note, index) => {
+            snapshot.forEach((child) => {
+                const note = { id: child.key, text: child.val().text, order: child.val().order };
+                
                 const div = document.createElement('div');
                 div.className = 'note-item';
+                div.dataset.id = note.id; // Dôležité pre identifikáciu pri posúvaní
 
                 div.innerHTML = `
-                    <div class="controls">
-                        <button class="btn-icon" onclick="moveNote(${index}, -1)" ${index === 0 ? 'disabled' : ''}>⬆</button>
-                        <button class="btn-icon" onclick="moveNote(${index}, 1)" ${index === notesData.length - 1 ? 'disabled' : ''}>⬇</button>
-                    </div>
-                    
+                    <div class="drag-handle">☰</div>
                     <div class="note-text">${note.text}</div>
-                    
                     <div class="controls">
                         <button class="btn-icon" onclick="editNote('${note.id}', '${note.text.replace(/'/g, "\\'")}')">✎ Upraviť</button>
                         <button class="btn-icon btn-danger" onclick="deleteNote('${note.id}')">✖ Zmazať</button>
                     </div>
                 `;
                 container.appendChild(div);
+                count++;
+            });
+
+            // Inicializácia ťahania po vyrenderovaní prvkov
+            initSortable();
+        });
+
+        function initSortable() {
+            const container = document.getElementById('notes-list');
+            if (sortableInstance) sortableInstance.destroy(); // Zabráni duplicite
+
+            sortableInstance = new Sortable(container, {
+                handle: '.drag-handle', // Ťahať sa dá iba za ikonu
+                animation: 250, // Plynulá animácia posunu
+                ghostClass: 'sortable-ghost',
+                onEnd: function () {
+                    // Po pustení poznámky aktualizujeme poradie vo Firebase
+                    const items = Array.from(container.children);
+                    const updates = {};
+                    
+                    items.forEach((item, index) => {
+                        const id = item.dataset.id;
+                        updates[`notes/${id}/order`] = index;
+                    });
+                    
+                    // Odošle hromadnú aktualizáciu všetkých pozícií
+                    db.ref().update(updates);
+                }
             });
         }
 
@@ -174,38 +214,13 @@
             const text = input.value.trim();
             if (!text) return;
 
-            const newOrder = notesData.length > 0 ? notesData[notesData.length - 1].order + 1 : 0;
-            
-            db.ref('notes').push({ text: text, order: newOrder });
-            input.value = '';
+            // Získame počet aktuálnych poznámok pre správne zaradenie na koniec
+            db.ref('notes').once('value').then(snapshot => {
+                const count = snapshot.numChildren();
+                db.ref('notes').push({ text: text, order: count });
+                input.value = '';
+            });
         }
 
         function editNote(id, currentText) {
-            const newText = prompt("Uprav poznámku:", currentText);
-            if (newText && newText.trim() !== "") {
-                db.ref(`notes/${id}`).update({ text: newText.trim() });
-            }
-        }
-
-        function deleteNote(id) {
-            if (confirm("Naozaj chceš zmazať túto poznámku?")) {
-                db.ref(`notes/${id}`).remove();
-            }
-        }
-
-        function moveNote(index, direction) {
-            if (index + direction < 0 || index + direction >= notesData.length) return;
-
-            const currentNote = notesData[index];
-            const targetNote = notesData[index + direction];
-
-            // Vymeníme ich 'order' hodnoty vo Firebase
-            const updates = {};
-            updates[`notes/${currentNote.id}/order`] = targetNote.order;
-            updates[`notes/${targetNote.id}/order`] = currentNote.order;
-
-            db.ref().update(updates);
-        }
-    </script>
-</body>
-</html>
+            const newText = prompt
