@@ -30,9 +30,11 @@
             background-color: var(--bg-color);
             color: var(--text-main);
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
-            padding: 40px;
+            padding: 20px;
             display: flex;
             justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
         }
 
         .admin-panel {
@@ -43,19 +45,22 @@
             border-radius: var(--radius);
             padding: 30px;
             width: 100%;
-            max-width: 800px;
+            max-width: 700px;
+            margin-top: 20px;
         }
 
-        h2 { margin-bottom: 20px; }
+        h2 { margin-bottom: 20px; font-size: 1.5rem; }
 
         .add-note-container {
             display: flex;
             gap: 10px;
             margin-bottom: 30px;
+            width: 100%;
         }
 
         input[type="text"] {
             flex: 1;
+            min-width: 0; /* Zabraňuje pretekaniu na malých obrazovkách */
             padding: 12px 16px;
             border-radius: 12px;
             border: 1px solid var(--panel-border);
@@ -74,6 +79,7 @@
             font-weight: 600;
             cursor: pointer;
             transition: opacity 0.2s;
+            flex-shrink: 0;
         }
 
         button:active { opacity: 0.7; }
@@ -87,6 +93,7 @@
             border-radius: 16px;
             margin-bottom: 10px;
             transition: background 0.2s;
+            gap: 12px;
         }
 
         .note-item.sortable-ghost {
@@ -96,10 +103,11 @@
 
         .drag-handle {
             cursor: grab;
-            padding: 0 15px 0 5px;
+            padding: 0 5px;
             color: var(--text-muted);
             font-size: 1.5rem;
             user-select: none;
+            flex-shrink: 0;
         }
 
         .drag-handle:active {
@@ -109,21 +117,64 @@
         .note-text {
             flex: 1;
             font-size: 1.1rem;
-            margin-right: 15px;
+            min-width: 0;
+            word-wrap: break-word;
         }
 
         .controls {
             display: flex;
             gap: 8px;
+            flex-shrink: 0;
         }
 
         .btn-icon {
             background: rgba(255, 255, 255, 0.1);
             padding: 8px 12px;
             font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .btn-danger { background: rgba(255, 69, 58, 0.2); color: var(--danger-color); }
+
+        /* RESPONZÍVNY DIZAJN PRE MOBILY */
+        @media (max-width: 550px) {
+            .admin-panel {
+                padding: 20px;
+            }
+
+            .add-note-container {
+                flex-direction: column;
+            }
+
+            .add-note-container button {
+                width: 100%;
+                padding: 14px;
+            }
+
+            .note-item {
+                flex-wrap: wrap;
+                padding: 12px;
+            }
+
+            .note-text {
+                /* Text zaberie zvyšok šírky vedľa ikony na ťahanie */
+                flex-basis: calc(100% - 45px); 
+            }
+
+            .controls {
+                width: 100%;
+                justify-content: space-between;
+                border-top: 1px solid rgba(255, 255, 255, 0.05);
+                padding-top: 12px;
+                margin-top: 4px;
+            }
+
+            .btn-icon {
+                flex: 1;
+            }
+        }
     </style>
 </head>
 <body>
@@ -155,28 +206,23 @@
         
         let sortableInstance = null;
 
-        // Načítanie poznámok bez Firebase indexovania (zoradenie prebehne v JavaScripte)
         db.ref('notes').on('value', (snapshot) => {
             const container = document.getElementById('notes-list');
             container.innerHTML = '';
             
             let notesArray = [];
 
-            // Naplnenie poľa bezpečne (aj pre staré poznámky bez 'order')
             snapshot.forEach((child) => {
                 const val = child.val();
                 notesArray.push({
                     id: child.key,
                     text: val.text || '',
-                    // Ak stará poznámka nemá order, dáme ju na koniec (999)
                     order: val.order !== undefined ? val.order : 999 
                 });
             });
 
-            // Zoradenie podľa order
             notesArray.sort((a, b) => a.order - b.order);
 
-            // Vykreslenie HTML
             notesArray.forEach((note) => {
                 const div = document.createElement('div');
                 div.className = 'note-item';
@@ -186,8 +232,8 @@
                     <div class="drag-handle">☰</div>
                     <div class="note-text">${note.text}</div>
                     <div class="controls">
-                        <button class="btn-icon" onclick="editNote('${note.id}', '${note.text.replace(/'/g, "\\'")}')">✎</button>
-                        <button class="btn-icon btn-danger" onclick="deleteNote('${note.id}')">✖</button>
+                        <button class="btn-icon" onclick="editNote('${note.id}', '${note.text.replace(/'/g, "\\'")}')">✎ Upraviť</button>
+                        <button class="btn-icon btn-danger" onclick="deleteNote('${note.id}')">✖ Zmazať</button>
                     </div>
                 `;
                 container.appendChild(div);
