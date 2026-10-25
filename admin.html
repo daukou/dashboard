@@ -3,52 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Poznámky</title>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&display=swap" rel="stylesheet">
+    <title>Admin - Poznámky</title>
     
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg-color: #000000;
+            --panel-bg: rgba(28, 28, 30, 0.65);
+            --panel-border: rgba(255, 255, 255, 0.08);
+            --text-main: #f5f5f7;
+            --text-muted: #86868b;
+            --accent-color: #0a84ff;
+            --danger-color: #ff453a;
+            --radius: 20px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
         body {
-            background-color: #0f111a;
-            color: #ffffff;
-            font-family: 'Montserrat', sans-serif;
-            padding: 20px;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+            padding: 40px;
+            display: flex;
+            justify-content: center;
         }
 
-        h1 {
-            font-size: 1.5rem;
-            margin-bottom: 20px;
-            color: #8a92b2;
+        .admin-panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--panel-border);
+            border-radius: var(--radius);
+            padding: 30px;
+            width: 100%;
+            max-width: 800px;
         }
 
-        .input-group {
+        h2 { margin-bottom: 20px; }
+
+        .add-note-container {
             display: flex;
             gap: 10px;
-            margin-bottom: 25px;
+            margin-bottom: 30px;
         }
 
-        input {
+        input[type="text"] {
             flex: 1;
-            padding: 15px;
-            border-radius: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            background-color: #1c2033;
-            color: #ffffff;
-            font-size: 1rem;
-            outline: none;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid var(--panel-border);
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            font-size: 1.1rem;
         }
 
         button {
-            padding: 15px 20px;
-            border-radius: 10px;
-            border: none;
-            background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
+            background: var(--accent-color);
             color: white;
-            font-weight: 700;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 12px;
             font-size: 1rem;
+            font-weight: 600;
             cursor: pointer;
         }
 
@@ -56,36 +76,46 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background-color: #1c2033;
-            padding: 15px;
-            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.04);
+            padding: 16px;
+            border-radius: 16px;
             margin-bottom: 10px;
-            border-left: 4px solid #00d2ff;
         }
 
-        .delete-btn {
-            background: none;
-            border: none;
-            color: #ff4757;
-            font-size: 1.2rem;
-            font-weight: bold;
-            padding: 5px 10px;
+        .note-text {
+            flex: 1;
+            font-size: 1.1rem;
+            margin: 0 15px;
         }
+
+        .controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-icon {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 12px;
+            font-size: 1rem;
+        }
+
+        .btn-danger { background: rgba(255, 69, 58, 0.2); color: var(--danger-color); }
     </style>
 </head>
 <body>
 
-    <h1>Poznámky na stenu</h1>
+    <div class="admin-panel">
+        <h2>Správa poznámok</h2>
+        
+        <div class="add-note-container">
+            <input type="text" id="new-note" placeholder="Napíš novú poznámku...">
+            <button onclick="addNote()">Pridať</button>
+        </div>
 
-    <div class="input-group">
-        <input type="text" id="note-input" placeholder="Nová poznámka...">
-        <button onclick="addNote()">Pridať</button>
+        <div id="notes-list"></div>
     </div>
 
-    <div id="notes-list"></div>
-
     <script>
-        // === SEM VLOŽ ROVNAKÝ KONFIGURAČNÝ OBJEKT Z FIREBASE ===
         const firebaseConfig = {
             apiKey: "AIzaSyBZmGJ715pJkMZJut9aSNfsm04oQH1YeCw",
             authDomain: "dauko-dashboard.firebaseapp.com",
@@ -93,42 +123,89 @@
             projectId: "dauko-dashboard",
             storageBucket: "dauko-dashboard.firebasestorage.app",
             messagingSenderId: "112349370791",
-            appId: "1:112349370791:web:d9ab50d25ecd89bc55be82",
-            measurementId: "G-MZRFBJ25SZ"
+            appId: "1:112349370791:web:d9ab50d25ecd89bc55be82"
         };
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
+        
+        let notesData = [];
+
+        // Načítanie poznámok zoradených podľa parametra 'order'
+        db.ref('notes').orderByChild('order').on('value', (snapshot) => {
+            notesData = [];
+            snapshot.forEach((child) => {
+                notesData.push({ 
+                    id: child.key, 
+                    text: child.val().text, 
+                    order: child.val().order || 0 
+                });
+            });
+            renderNotes();
+        });
+
+        function renderNotes() {
+            const container = document.getElementById('notes-list');
+            container.innerHTML = '';
+
+            notesData.forEach((note, index) => {
+                const div = document.createElement('div');
+                div.className = 'note-item';
+
+                div.innerHTML = `
+                    <div class="controls">
+                        <button class="btn-icon" onclick="moveNote(${index}, -1)" ${index === 0 ? 'disabled' : ''}>⬆</button>
+                        <button class="btn-icon" onclick="moveNote(${index}, 1)" ${index === notesData.length - 1 ? 'disabled' : ''}>⬇</button>
+                    </div>
+                    
+                    <div class="note-text">${note.text}</div>
+                    
+                    <div class="controls">
+                        <button class="btn-icon" onclick="editNote('${note.id}', '${note.text.replace(/'/g, "\\'")}')">✎ Upraviť</button>
+                        <button class="btn-icon btn-danger" onclick="deleteNote('${note.id}')">✖ Zmazať</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
 
         function addNote() {
-            const input = document.getElementById('note-input');
+            const input = document.getElementById('new-note');
             const text = input.value.trim();
-            if (text !== '') {
-                db.ref('notes').push({ text: text });
-                input.value = '';
+            if (!text) return;
+
+            const newOrder = notesData.length > 0 ? notesData[notesData.length - 1].order + 1 : 0;
+            
+            db.ref('notes').push({ text: text, order: newOrder });
+            input.value = '';
+        }
+
+        function editNote(id, currentText) {
+            const newText = prompt("Uprav poznámku:", currentText);
+            if (newText && newText.trim() !== "") {
+                db.ref(`notes/${id}`).update({ text: newText.trim() });
             }
         }
 
         function deleteNote(id) {
-            db.ref('notes/' + id).remove();
+            if (confirm("Naozaj chceš zmazať túto poznámku?")) {
+                db.ref(`notes/${id}`).remove();
+            }
         }
 
-        db.ref('notes').on('value', (snapshot) => {
-            const list = document.getElementById('notes-list');
-            list.innerHTML = '';
-            const data = snapshot.val();
-            if (data) {
-                Object.keys(data).forEach(key => {
-                    const item = document.createElement('div');
-                    item.className = 'note-item';
-                    item.innerHTML = `
-                        <span>${data[key].text}</span>
-                        <button class="delete-btn" onclick="deleteNote('${key}')">✕</button>
-                    `;
-                    list.appendChild(item);
-                });
-            }
-        });
+        function moveNote(index, direction) {
+            if (index + direction < 0 || index + direction >= notesData.length) return;
+
+            const currentNote = notesData[index];
+            const targetNote = notesData[index + direction];
+
+            // Vymeníme ich 'order' hodnoty vo Firebase
+            const updates = {};
+            updates[`notes/${currentNote.id}/order`] = targetNote.order;
+            updates[`notes/${targetNote.id}/order`] = currentNote.order;
+
+            db.ref().update(updates);
+        }
     </script>
 </body>
 </html>
